@@ -25,6 +25,8 @@ export function BoardSettings({ board }) {
     const [deleteOpen, setDeleteOpen] = useState(false);
 
     const isOwner = board.ownerId === user?.id;
+    const currentMember = board.members.find((m) => m.userId === user?.id);
+    const isViewer = !isOwner && currentMember?.role === "viewer";
 
     function handleDeleteBoard() {
         deleteBoard(board.id);
@@ -32,10 +34,21 @@ export function BoardSettings({ board }) {
     }
 
     return (
-        <div className="space-y-8 py-6 animate-fade-in">
+        <div className="space-y-8 pb-6 animate-fade-in">
+            {/* Viewer notice */}
+            {isViewer && (
+                <div className="rounded-lg border border-border bg-muted px-4 py-3 text-sm text-muted-foreground">
+                    You have <strong>read-only</strong> access to this board. Contact the owner to make changes.
+                </div>
+            )}
+
             {/* Board Name */}
             <Section title="Board Name">
-                <EditableNameField value={board.name} onSave={(name) => updateBoard(board.id, { name })} />
+                {isViewer ? (
+                    <span className="text-lg font-bold text-foreground">{board.name}</span>
+                ) : (
+                    <EditableNameField value={board.name} onSave={(name) => updateBoard(board.id, { name })} />
+                )}
             </Section>
 
             {/* Columns */}
@@ -50,10 +63,11 @@ export function BoardSettings({ board }) {
                                 onUpdate={(patch) => updateColumn(board.id, col.id, patch)}
                                 onRemove={() => removeColumn(board.id, col.id)}
                                 canRemove={board.columns.length > 1}
+                                isViewer={isViewer}
                             />
                         ))}
                 </div>
-                <AddItemForm placeholder="New column name..." hasColor onAdd={(title, color) => addColumn(board.id, title, color)} />
+                {!isViewer && <AddItemForm placeholder="New column name..." hasColor onAdd={(title, color) => addColumn(board.id, title, color)} />}
             </Section>
 
             {/* Priorities */}
@@ -68,10 +82,11 @@ export function BoardSettings({ board }) {
                                 onUpdate={(patch) => updatePriority(board.id, pri.id, patch)}
                                 onRemove={() => removePriority(board.id, pri.id)}
                                 canRemove={board.priorities.length > 1}
+                                isViewer={isViewer}
                             />
                         ))}
                 </div>
-                <AddItemForm placeholder="New priority name..." hasColor onAdd={(label, color) => addPriority(board.id, label, color)} />
+                {!isViewer && <AddItemForm placeholder="New priority name..." hasColor onAdd={(label, color) => addPriority(board.id, label, color)} />}
             </Section>
 
             {/* Members */}
@@ -201,7 +216,7 @@ function EditableNameField({ value, onSave }) {
     );
 }
 
-function ColumnRow({ column, onUpdate, onRemove, canRemove }) {
+function ColumnRow({ column, onUpdate, onRemove, canRemove, isViewer }) {
     const [editing, setEditing] = useState(false);
     const safeTitle = typeof column.title === "string" ? column.title : column.title?.title || "New Column";
     const [title, setTitle] = useState(safeTitle);
@@ -241,19 +256,21 @@ function ColumnRow({ column, onUpdate, onRemove, canRemove }) {
                     <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ background: column.color }} />
                     <span className="flex-1 text-sm font-medium text-foreground">{safeTitle}</span>
                     {column.isDone && <span className="text-xs rounded-full px-2 py-0.5 bg-emerald-50 text-emerald-600 font-medium">Done</span>}
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                            setTitle(safeTitle);
-                            setColor(column.color);
-                            setEditing(true);
-                        }}
-                        className="h-7 px-2 text-xs"
-                    >
-                        Edit
-                    </Button>
-                    {canRemove && (
+                    {!isViewer && (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                                setTitle(safeTitle);
+                                setColor(column.color);
+                                setEditing(true);
+                            }}
+                            className="h-7 px-2 text-xs"
+                        >
+                            Edit
+                        </Button>
+                    )}
+                    {!isViewer && canRemove && (
                         <>
                             <Button size="sm" variant="ghost" onClick={() => setDeleteOpen(true)} className="h-7 px-2 text-red-500 hover:text-red-600">
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -280,7 +297,7 @@ function ColumnRow({ column, onUpdate, onRemove, canRemove }) {
     );
 }
 
-function PriorityRow({ priority, onUpdate, onRemove, canRemove }) {
+function PriorityRow({ priority, onUpdate, onRemove, canRemove, isViewer }) {
     const [editing, setEditing] = useState(false);
     const [label, setLabel] = useState(priority.label);
     const [color, setColor] = useState(priority.color);
@@ -314,19 +331,21 @@ function PriorityRow({ priority, onUpdate, onRemove, canRemove }) {
                 <>
                     <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ background: priority.color }} />
                     <span className="flex-1 text-sm font-medium text-foreground">{priority.label}</span>
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                            setLabel(priority.label);
-                            setColor(priority.color);
-                            setEditing(true);
-                        }}
-                        className="h-7 px-2 text-xs"
-                    >
-                        Edit
-                    </Button>
-                    {canRemove && (
+                    {!isViewer && (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                                setLabel(priority.label);
+                                setColor(priority.color);
+                                setEditing(true);
+                            }}
+                            className="h-7 px-2 text-xs"
+                        >
+                            Edit
+                        </Button>
+                    )}
+                    {!isViewer && canRemove && (
                         <>
                             <Button size="sm" variant="ghost" onClick={() => setDeleteOpen(true)} className="h-7 px-2 text-red-500 hover:text-red-600">
                                 <Trash2 className="h-3.5 w-3.5" />
