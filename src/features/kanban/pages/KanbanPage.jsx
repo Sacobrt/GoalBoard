@@ -102,23 +102,10 @@ export function KanbanPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {userRole !== "viewer" && (
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/board/${boardId}/settings`)}>
-                            <Settings className="h-4 w-4" />
-                            <span className="hidden sm:inline">Settings</span>
-                        </Button>
-                    )}
-                    {!isOwner && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200"
-                            onClick={() => setLeaveOpen(true)}
-                        >
-                            <LogOut className="h-4 w-4" />
-                            <span className="hidden sm:inline">Leave Board</span>
-                        </Button>
-                    )}
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/board/${boardId}/settings`)}>
+                        <Settings className="h-4 w-4" />
+                        <span className="hidden sm:inline">Settings</span>
+                    </Button>
                 </div>
             </div>
 
