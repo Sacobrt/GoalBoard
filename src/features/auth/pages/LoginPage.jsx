@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -43,6 +43,11 @@ export function LoginPage() {
             </div>
 
             <div className="animate-scale-in relative w-full max-w-md">
+                <Button variant="outline" size="sm" className="my-4">
+                    <ArrowLeft className="size-3.5" />
+                    <Link to="/dashboard">Back to Home</Link>
+                </Button>
+
                 {/* Card */}
                 <div className="rounded-2xl border border-border bg-card/90 backdrop-blur-xl p-8 shadow-2xl">
                     {/* Logo */}
@@ -59,6 +64,41 @@ export function LoginPage() {
                             {error}
                         </div>
                     )}
+
+                    {/* Test accounts */}
+                    <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 mb-4 text-xs text-muted-foreground space-y-1.5">
+                        <p className="font-medium text-foreground/70">Test accounts</p>
+                        <div className="flex items-center justify-between">
+                            <span>
+                                <span className="text-foreground/80">Admin:</span> admin@example.com / admin
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEmail("admin@example.com");
+                                    setPassword("admin");
+                                }}
+                                className="text-primary hover:underline"
+                            >
+                                Fill
+                            </button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span>
+                                <span className="text-foreground/80">Demo:</span> demo@example.com / demo
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEmail("demo@example.com");
+                                    setPassword("demo");
+                                }}
+                                className="text-primary hover:underline"
+                            >
+                                Fill
+                            </button>
+                        </div>
+                    </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
