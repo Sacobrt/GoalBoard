@@ -5,6 +5,37 @@ import { DEFAULT_ROLE, ROLES } from "../../../shared/auth/roles";
 
 const SALT_ROUNDS = 10;
 
+const DEFAULT_USERS = [
+    { email: "admin@example.com", username: "admin", fullName: "Danijel", password: "admin", role: ROLES.ADMIN },
+    { email: "demo@example.com", username: "demo", fullName: "", password: "demo", role: DEFAULT_ROLE },
+];
+
+export async function seedDefaultUsers() {
+    const users = JSON.parse(localStorage.getItem("goalboard_users") ?? "[]");
+    const toAdd = DEFAULT_USERS.filter((d) => !users.some((u) => u.email.toLowerCase() === d.email.toLowerCase()));
+    if (toAdd.length === 0) return;
+
+    const seeded = await Promise.all(
+        toAdd.map(async (d) => ({
+            id: crypto.randomUUID(),
+            username: d.username,
+            fullName: d.fullName,
+            email: d.email,
+            passwordHash: await bcrypt.hash(d.password, SALT_ROUNDS),
+            role: d.role,
+            bio: "",
+            website: "",
+            location: "",
+            organization: "",
+            jobTitle: "",
+            education: "",
+            createdAt: new Date().toISOString(),
+        })),
+    );
+
+    localStorage.setItem("goalboard_users", JSON.stringify([...users, ...seeded]));
+}
+
 export const useAuthStore = create(
     persist(
         (set) => ({
