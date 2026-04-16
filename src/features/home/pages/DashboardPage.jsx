@@ -1,22 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
-import {
-    ArrowRight,
-    CheckCircle2,
-    ListTodo,
-    TrendingUp,
-    AlertTriangle,
-    CalendarClock,
-    Plus,
-    KanbanSquare,
-    Check,
-    X,
-    Users,
-    Trash2,
-    ChevronLeft,
-    ChevronRight,
-    Search,
-} from "lucide-react";
+import { useState, useMemo, lazy, Suspense } from "react";
+import { CheckCircle2, ListTodo, TrendingUp, AlertTriangle, CalendarClock, Plus, KanbanSquare, Check, X, Users, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area } from "recharts";
 import { useAuthStore } from "../../auth/store/authStore";
 import { useBoardStore } from "../../board/store/boardStore";
@@ -24,7 +7,6 @@ import { useKanbanStore } from "../../kanban/store/kanbanStore";
 import { timeAgo } from "../../../shared/utils/timeAgo";
 import { PageHeader } from "../../../components/patterns/PageHeader";
 import { EmptyState } from "../../../components/patterns/EmptyState";
-import { Progress } from "../../../components/ui/progress";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import {
@@ -37,6 +19,17 @@ import {
     AlertDialogCancel,
     AlertDialogAction,
 } from "../../../components/ui/alert-dialog";
+import { ViewSwitcher } from "../../../shared/components/ViewSwitcher";
+import { useBoardView } from "../../../shared/hooks/useBoardView";
+import { GridView } from "../../../shared/components/board-views/GridView";
+import { ListView } from "../../../shared/components/board-views/ListView";
+import { TableView } from "../../../shared/components/board-views/TableView";
+import { FavoritesView } from "../../../shared/components/board-views/FavoritesView";
+import { RecentView } from "../../../shared/components/board-views/RecentView";
+import { TimelineView } from "../../../shared/components/board-views/TimelineView";
+
+// Heavy views are lazy-loaded to keep initial bundle lean
+const KanbanView = lazy(() => import("../../../shared/components/board-views/KanbanView").then((m) => ({ default: m.KanbanView })));
 
 function greeting() {
     const h = new Date().getHours();
@@ -49,20 +42,25 @@ export function DashboardPage() {
     const user = useAuthStore((s) => s.user);
     const allBoards = useBoardStore((s) => s.boards);
     const allInvitations = useBoardStore((s) => s.invitations);
+    const pinnedBoards = useBoardStore((s) => s.pinnedBoards);
+    const boardStages = useBoardStore((s) => s.boardStages);
     const respondToInvitation = useBoardStore((s) => s.respondToInvitation);
     const createBoard = useBoardStore((s) => s.createBoard);
     const deleteBoard = useBoardStore((s) => s.deleteBoard);
+    const togglePin = useBoardStore((s) => s.togglePin);
+    const setBoardStage = useBoardStore((s) => s.setBoardStage);
     const allTasks = useKanbanStore((s) => s.tasks);
 
     const boards = allBoards.filter((b) => b.members.some((m) => m.userId === user?.id));
     const pendingInvitations = allInvitations.filter((i) => i.toEmail.toLowerCase() === (user?.email ?? "").toLowerCase() && i.status === "pending");
 
+    const pinnedBoardIds = useMemo(() => new Set(pinnedBoards), [pinnedBoards]);
+
     const [showNewBoard, setShowNewBoard] = useState(false);
     const [newBoardName, setNewBoardName] = useState("");
     const [deleteBoardId, setDeleteBoardId] = useState(null);
-    const [boardPage, setBoardPage] = useState(1);
     const [boardSearch, setBoardSearch] = useState("");
-    const BOARDS_PER_PAGE = 6;
+    const { view: boardView, setView: setBoardView } = useBoardView();
     const boardToDelete = boards.find((b) => b.id === deleteBoardId);
 
     const today = new Date().toISOString().split("T")[0];
@@ -141,18 +139,6 @@ export function DashboardPage() {
         const sorted = [...boards].sort((a, b) => new Date(b.updatedAt ?? b.createdAt) - new Date(a.updatedAt ?? a.createdAt));
         return !boardSearch ? sorted : sorted.filter((b) => b.name.toLowerCase().includes(boardSearch.toLowerCase()));
     }, [boards, boardSearch]);
-
-    useEffect(() => setBoardPage(1), [boardSearch]);
-
-    const totalBoardPages = Math.max(1, Math.ceil(filteredBoards.length / BOARDS_PER_PAGE));
-    const paginatedBoards = filteredBoards.slice((boardPage - 1) * BOARDS_PER_PAGE, boardPage * BOARDS_PER_PAGE);
-    const boardPageRange = (() => {
-        if (totalBoardPages <= 7) return Array.from({ length: totalBoardPages }, (_, i) => i + 1);
-        if (boardPage <= 4) return [1, 2, 3, 4, 5, "...", totalBoardPages];
-        if (boardPage >= totalBoardPages - 3)
-            return [1, "...", totalBoardPages - 4, totalBoardPages - 3, totalBoardPages - 2, totalBoardPages - 1, totalBoardPages];
-        return [1, "...", boardPage - 1, boardPage, boardPage + 1, "...", totalBoardPages];
-    })();
 
     const statCards = [
         {
@@ -248,10 +234,12 @@ export function DashboardPage() {
 
             {/* Boards */}
             <div>
-                <div className="flex items-center gap-3 mb-4">
+                {/* Section header row */}
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <h2 className="font-semibold text-sm text-foreground shrink-0">Your Boards</h2>
+
                     {boards.length > 0 && (
-                        <div className="relative flex-1 max-w-sm">
+                        <div className="relative max-w-55 flex-1 min-w-30">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input
                                 value={boardSearch}
@@ -266,13 +254,18 @@ export function DashboardPage() {
                             )}
                         </div>
                     )}
-                    {!showNewBoard && (
-                        <Button size="sm" variant="outline" className="ml-auto shrink-0" onClick={() => setShowNewBoard(true)}>
-                            <Plus className="h-4 w-4" /> New Board
-                        </Button>
-                    )}
+
+                    <div className="ml-auto flex items-center gap-2 shrink-0">
+                        {boards.length > 0 && <ViewSwitcher view={boardView} onViewChange={setBoardView} />}
+                        {!showNewBoard && (
+                            <Button size="sm" variant="outline" onClick={() => setShowNewBoard(true)}>
+                                <Plus className="h-4 w-4" /> New Board
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
+                {/* Inline new-board form */}
                 {showNewBoard && (
                     <form onSubmit={handleCreateBoard} className="flex items-center gap-2 mb-4">
                         <Input value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)} placeholder="Board name..." autoFocus className="max-w-xs" />
@@ -285,6 +278,7 @@ export function DashboardPage() {
                     </form>
                 )}
 
+                {/* Empty states */}
                 {boards.length === 0 ? (
                     <EmptyState
                         icon={KanbanSquare}
@@ -304,115 +298,19 @@ export function DashboardPage() {
                         </button>
                     </div>
                 ) : (
-                    <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {paginatedBoards.map((board) => {
-                                const boardTasks = allTasks.filter((t) => t.boardId === board.id && !t.archived);
-                                const doneIds = new Set(board.columns.filter((c) => c.isDone).map((c) => c.id));
-                                const completed = boardTasks.filter((t) => doneIds.has(t.columnId)).length;
-                                const total = boardTasks.length;
-                                const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-                                return (
-                                    <div
-                                        key={board.id}
-                                        className="group relative rounded-xl border border-border p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md hover:border-border bg-card"
-                                    >
-                                        {board.ownerId === user?.id && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    setDeleteBoardId(board.id);
-                                                }}
-                                                className="absolute top-3.5 right-10 flex items-center justify-center w-7 h-7 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600 hover:bg-red-50"
-                                                title="Delete board"
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </button>
-                                        )}
-                                        <Link to={`/board/${board.id}`} className="block">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{board.name}</h3>
-                                                <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
-                                            </div>
-                                            <div className="flex items-center gap-2 mb-3">
-                                                {board.columns
-                                                    .sort((a, b) => a.order - b.order)
-                                                    .map((col) => (
-                                                        <span
-                                                            key={col.id}
-                                                            className="inline-block w-2 h-2 rounded-full"
-                                                            style={{ background: col.color }}
-                                                            title={col.title}
-                                                        />
-                                                    ))}
-                                            </div>
-                                            <Progress value={pct} className="h-1.5 mb-2" />
-                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                <span>
-                                                    {total} task{total !== 1 && "s"}
-                                                </span>
-                                                <span>{pct}% done</span>
-                                            </div>
-                                            <div className="flex items-center gap-1 mt-2">
-                                                <Users className="h-3 w-3 text-muted-foreground" />
-                                                <span className="text-xs text-muted-foreground">
-                                                    {board.members.length} member{board.members.length !== 1 && "s"}
-                                                </span>
-                                            </div>
-                                        </Link>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {totalBoardPages > 1 && (
-                            <div className="flex items-center justify-between mt-4">
-                                <span className="text-xs text-muted-foreground">
-                                    Showing {(boardPage - 1) * BOARDS_PER_PAGE + 1}–{Math.min(boardPage * BOARDS_PER_PAGE, filteredBoards.length)} of{" "}
-                                    {filteredBoards.length} board{filteredBoards.length !== 1 && "s"}
-                                    {boardSearch && ` — filtered from ${boards.length}`}
-                                </span>
-                                <div className="flex items-center gap-1">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => setBoardPage((p) => Math.max(1, p - 1))}
-                                        disabled={boardPage === 1}
-                                    >
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </Button>
-                                    {boardPageRange.map((page, i) =>
-                                        page === "..." ? (
-                                            <span key={`ellipsis-${i}`} className="px-1.5 text-xs text-muted-foreground select-none">
-                                                ...
-                                            </span>
-                                        ) : (
-                                            <Button
-                                                key={page}
-                                                variant={boardPage === page ? "default" : "outline"}
-                                                size="sm"
-                                                className="h-8 w-8 p-0 text-xs"
-                                                onClick={() => setBoardPage(page)}
-                                            >
-                                                {page}
-                                            </Button>
-                                        ),
-                                    )}
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        onClick={() => setBoardPage((p) => Math.min(totalBoardPages, p + 1))}
-                                        disabled={boardPage === totalBoardPages}
-                                    >
-                                        <ChevronRight className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                    </>
+                    /* Active view */
+                    <ActiveBoardView
+                        view={boardView}
+                        onViewChange={setBoardView}
+                        boards={filteredBoards}
+                        allTasks={allTasks}
+                        user={user}
+                        pinnedBoardIds={pinnedBoardIds}
+                        onTogglePin={togglePin}
+                        onDelete={(id) => setDeleteBoardId(id)}
+                        boardStages={boardStages}
+                        onStageChange={setBoardStage}
+                    />
                 )}
             </div>
 
@@ -557,4 +455,33 @@ export function DashboardPage() {
             </AlertDialog>
         </div>
     );
+}
+
+const SHARED_PROPS = ["boards", "allTasks", "user", "pinnedBoardIds", "onTogglePin", "onDelete"];
+
+function ActiveBoardView({ view, onViewChange, boards, allTasks, user, pinnedBoardIds, onTogglePin, onDelete, boardStages, onStageChange }) {
+    const shared = { boards, allTasks, user, pinnedBoardIds, onTogglePin, onDelete };
+
+    switch (view) {
+        case "grid":
+            return <GridView {...shared} />;
+        case "list":
+            return <ListView {...shared} />;
+        case "table":
+            return <TableView {...shared} />;
+        case "kanban":
+            return (
+                <Suspense fallback={<div className="py-8 text-center text-sm text-muted-foreground">Loading Kanban view...</div>}>
+                    <KanbanView {...shared} boardStages={boardStages} onStageChange={onStageChange} />
+                </Suspense>
+            );
+        case "favorites":
+            return <FavoritesView {...shared} onSwitchView={onViewChange} />;
+        case "recent":
+            return <RecentView {...shared} />;
+        case "timeline":
+            return <TimelineView {...shared} />;
+        default:
+            return <GridView {...shared} />;
+    }
 }
