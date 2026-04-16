@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useNotificationStore } from "../../notifications/store/notificationStore";
+import { BOARD_STAGES } from "../../../shared/config/boardStages";
 
 function uuid() {
     return crypto.randomUUID();
@@ -27,6 +28,8 @@ export const useBoardStore = create(
         (set, get) => ({
             boards: [],
             invitations: [],
+            pinnedBoards: [],
+            boardStages: {},
 
             createBoard(name, ownerId) {
                 const now = new Date().toISOString();
@@ -37,6 +40,7 @@ export const useBoardStore = create(
                     members: [{ userId: ownerId, role: "owner" }],
                     columns: defaultColumns(),
                     priorities: defaultPriorities(),
+                    stages: BOARD_STAGES.map((s) => ({ ...s })),
                     createdAt: now,
                     updatedAt: now,
                 };
@@ -247,6 +251,71 @@ export const useBoardStore = create(
 
             getBoardsForUser(userId) {
                 return get().boards.filter((b) => b.members.some((m) => m.userId === userId));
+            },
+
+            togglePin(boardId) {
+                set((s) => ({
+                    pinnedBoards: s.pinnedBoards.includes(boardId) ? s.pinnedBoards.filter((id) => id !== boardId) : [...s.pinnedBoards, boardId],
+                }));
+            },
+
+            setBoardStage(boardId, stage) {
+                set((s) => {
+                    if (stage === null) {
+                        const { [boardId]: _removed, ...rest } = s.boardStages;
+                        return { boardStages: rest };
+                    }
+                    return { boardStages: { ...s.boardStages, [boardId]: stage } };
+                });
+            },
+
+            addBoardStageOption(boardId, label, color) {
+                const r = parseInt(color.slice(1, 3), 16);
+                const g = parseInt(color.slice(3, 5), 16);
+                const b = parseInt(color.slice(5, 7), 16);
+                const bg = `rgba(${r},${g},${b},0.08)`;
+                set((s) => ({
+                    boards: s.boards.map((board) => {
+                        if (board.id !== boardId) return board;
+                        const stages = board.stages ?? BOARD_STAGES.map((s) => ({ ...s }));
+                        return {
+                            ...board,
+                            updatedAt: new Date().toISOString(),
+                            stages: [...stages, { id: uuid(), label, color, bg }],
+                        };
+                    }),
+                }));
+            },
+
+            updateBoardStageOption(boardId, stageId, patch) {
+                set((s) => ({
+                    boards: s.boards.map((board) => {
+                        if (board.id !== boardId) return board;
+                        const stages = (board.stages ?? BOARD_STAGES.map((s) => ({ ...s }))).map((stage) =>
+                            stage.id === stageId ? { ...stage, ...patch } : stage,
+                        );
+                        return { ...board, updatedAt: new Date().toISOString(), stages };
+                    }),
+                }));
+            },
+
+            removeBoardStageOption(boardId, stageId) {
+                set((s) => {
+                    const boards = s.boards.map((board) => {
+                        if (board.id !== boardId) return board;
+                        const stages = (board.stages ?? BOARD_STAGES.map((st) => ({ ...st }))).filter((st) => st.id !== stageId);
+                        return { ...board, updatedAt: new Date().toISOString(), stages };
+                    });
+                    // If this board was set to the removed stage, clear it
+                    const boardStages =
+                        s.boardStages[boardId] === stageId
+                            ? (() => {
+                                  const { [boardId]: _, ...rest } = s.boardStages;
+                                  return rest;
+                              })()
+                            : s.boardStages;
+                    return { boards, boardStages };
+                });
             },
 
             getPendingInvitations(email) {
