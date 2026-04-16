@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Check, X, Mail, Users, Columns3, Flame, Crown, UserMinus } from "lucide-react";
+import { Plus, Trash2, Check, X, Mail, Users, Columns3, Flame, Crown, UserMinus, Flag, Lock, Layers } from "lucide-react";
 import { useBoardStore } from "../store/boardStore";
 import { useAuthStore } from "../../auth/store/authStore";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { BOARD_STAGES } from "../../../shared/config/boardStages";
 import {
     AlertDialog,
     AlertDialogContent,
@@ -19,14 +20,34 @@ import { UserAvatar } from "@/shared/components/UserAvatar";
 
 export function BoardSettings({ board }) {
     const user = useAuthStore((s) => s.user);
-    const { updateBoard, deleteBoard, addColumn, updateColumn, removeColumn, addPriority, updatePriority, removePriority, removeMember, updateMemberRole } =
-        useBoardStore();
+    const {
+        updateBoard,
+        deleteBoard,
+        addColumn,
+        updateColumn,
+        removeColumn,
+        addPriority,
+        updatePriority,
+        removePriority,
+        removeMember,
+        updateMemberRole,
+        boardStages,
+        setBoardStage,
+        addBoardStageOption,
+        updateBoardStageOption,
+        removeBoardStageOption,
+    } = useBoardStore();
     const navigate = useNavigate();
     const [deleteOpen, setDeleteOpen] = useState(false);
 
     const isOwner = board.ownerId === user?.id;
     const currentMember = board.members.find((m) => m.userId === user?.id);
-    const isViewer = !isOwner && currentMember?.role === "viewer";
+
+    const currentStage = boardStages?.[board.id] ?? null;
+    const isCompleted = currentStage === "completed";
+
+    // When board is completed, non-owner members are locked to read-only in settings too
+    const isViewer = !isOwner && (currentMember?.role === "viewer" || isCompleted);
 
     function handleDeleteBoard() {
         deleteBoard(board.id);
@@ -42,6 +63,16 @@ export function BoardSettings({ board }) {
                 </div>
             )}
 
+            {/* Completed lock notice */}
+            {isCompleted && !isOwner && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-start gap-2 text-sm text-emerald-700">
+                    <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>
+                        This board is <strong>completed</strong> and is locked for editing. Only the owner can change the stage.
+                    </span>
+                </div>
+            )}
+
             {/* Board Name */}
             <Section title="Board Name">
                 {isViewer ? (
@@ -49,6 +80,62 @@ export function BoardSettings({ board }) {
                 ) : (
                     <EditableNameField value={board.name} onSave={(name) => updateBoard(board.id, { name })} />
                 )}
+            </Section>
+
+            {/* Stage */}
+            <Section title="Stage" icon={Flag}>
+                <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground">
+                        Set the current lifecycle stage for this board. When set to <strong>Completed</strong>, non-owner members will be locked out of editing.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        {(board.stages ?? BOARD_STAGES).map((stage) => {
+                            const active = currentStage === stage.id || (stage.id === (board.stages ?? BOARD_STAGES)[0]?.id && !currentStage);
+                            return (
+                                <button
+                                    key={stage.id}
+                                    onClick={() =>
+                                        isOwner && setBoardStage(board.id, stage.id === (currentStage ?? (board.stages ?? BOARD_STAGES)[0]?.id) ? null : stage.id)
+                                    }
+                                    disabled={!isOwner}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                                        active ? "border-transparent text-white shadow-sm" : "border-border bg-card text-muted-foreground hover:border-current"
+                                    } ${!isOwner ? "cursor-default opacity-80" : "cursor-pointer"}`}
+                                    style={active ? { background: stage.color } : { color: stage.color }}
+                                    title={!isOwner ? "Only the board owner can change the stage" : undefined}
+                                >
+                                    <span className="inline-block w-2 h-2 rounded-full" style={{ background: active ? "rgba(255,255,255,0.7)" : stage.color }} />
+                                    {stage.label}
+                                    {active && <Check className="h-3 w-3 ml-0.5" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {isCompleted && isOwner && (
+                        <p className="text-xs text-emerald-600 flex items-center gap-1">
+                            <Lock className="h-3 w-3" />
+                            Board is completed — non-owner members cannot edit or add tasks. Click a different stage to unlock.
+                        </p>
+                    )}
+                </div>
+            </Section>
+
+            {/* Stage Options */}
+            <Section title="Stage Options" icon={Layers}>
+                <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground mb-3">Customise the lifecycle stages available for this board. The first stage is the default.</p>
+                    {(board.stages ?? BOARD_STAGES).map((stage) => (
+                        <StageOptionRow
+                            key={stage.id}
+                            stage={stage}
+                            onUpdate={(patch) => updateBoardStageOption(board.id, stage.id, patch)}
+                            onRemove={() => removeBoardStageOption(board.id, stage.id)}
+                            canRemove={(board.stages ?? BOARD_STAGES).length > 1}
+                            isViewer={isViewer}
+                        />
+                    ))}
+                </div>
+                {!isViewer && <AddItemForm placeholder="New stage name..." hasColor onAdd={(label, color) => addBoardStageOption(board.id, label, color)} />}
             </Section>
 
             {/* Columns */}
@@ -356,6 +443,84 @@ function PriorityRow({ priority, onUpdate, onRemove, canRemove, isViewer }) {
                                         <AlertDialogTitle>Delete priority?</AlertDialogTitle>
                                         <AlertDialogDescription>
                                             Delete &ldquo;{priority.label}&rdquo;? Tasks using this priority will have their priority removed.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={onRemove}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+function StageOptionRow({ stage, onUpdate, onRemove, canRemove, isViewer }) {
+    const [editing, setEditing] = useState(false);
+    const [label, setLabel] = useState(stage.label);
+    const [color, setColor] = useState(stage.color);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+
+    function save() {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        onUpdate({ label: label.trim() || stage.label, color, bg: `rgba(${r},${g},${b},0.08)` });
+        setEditing(false);
+    }
+
+    return (
+        <div className="flex items-center gap-2 rounded-lg px-3 py-2 bg-muted">
+            {editing ? (
+                <>
+                    <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-6 h-6 rounded cursor-pointer border-0 p-0" />
+                    <Input
+                        value={label}
+                        onChange={(e) => setLabel(e.target.value)}
+                        className="flex-1 h-8 text-sm"
+                        autoFocus
+                        onKeyDown={(e) => e.key === "Enter" && save()}
+                    />
+                    <Button size="sm" variant="ghost" onClick={save}>
+                        <Check className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                        <X className="h-3.5 w-3.5" />
+                    </Button>
+                </>
+            ) : (
+                <>
+                    <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ background: stage.color }} />
+                    <span className="flex-1 text-sm font-medium text-foreground">{stage.label}</span>
+                    {!isViewer && (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                                setLabel(stage.label);
+                                setColor(stage.color);
+                                setEditing(true);
+                            }}
+                            className="h-7 px-2 text-xs"
+                        >
+                            Edit
+                        </Button>
+                    )}
+                    {!isViewer && canRemove && (
+                        <>
+                            <Button size="sm" variant="ghost" onClick={() => setDeleteOpen(true)} className="h-7 px-2 text-red-500 hover:text-red-600">
+                                <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete stage option?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Delete &ldquo;{stage.label}&rdquo;? Boards currently in this stage will have their stage reset.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
