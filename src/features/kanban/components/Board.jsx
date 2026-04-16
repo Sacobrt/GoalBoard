@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
-import { Search, X, Archive, Plus, Check } from "lucide-react";
+import { Search, X, Archive, Plus, Check, Pencil } from "lucide-react";
 import { Column } from "./Column";
 import { TaskCard } from "./TaskCard";
 import { AddTaskDialog } from "./AddTaskDialog";
@@ -33,6 +33,20 @@ export function Board({ board, userRole }) {
     const [addColOpen, setAddColOpen] = useState(false);
     const [addColName, setAddColName] = useState("");
     const [addColColor, setAddColColor] = useState("#94a3b8");
+    const [taskContextMenu, setTaskContextMenu] = useState(null); // { x, y, taskId }
+
+    useEffect(() => {
+        if (!taskContextMenu) return;
+        function close() {
+            setTaskContextMenu(null);
+        }
+        window.addEventListener("click", close);
+        window.addEventListener("contextmenu", close);
+        return () => {
+            window.removeEventListener("click", close);
+            window.removeEventListener("contextmenu", close);
+        };
+    }, [taskContextMenu]);
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -178,6 +192,7 @@ export function Board({ board, userRole }) {
                                                     setDetailTaskEditing(false);
                                                 }}
                                                 onArchive={archiveTask}
+                                                onContextMenu={(x, y, taskId) => setTaskContextMenu({ x, y, taskId })}
                                                 userRole={userRole}
                                             />
                                         </div>
@@ -256,6 +271,42 @@ export function Board({ board, userRole }) {
                     onClose={() => setShowArchived(false)}
                 />
             )}
+
+            {/* Task right-click context menu */}
+            {taskContextMenu &&
+                (() => {
+                    return (
+                        <div
+                            className="fixed z-50 rounded-xl border border-border bg-popover shadow-xl py-1.5 min-w-[170px] animate-fade-in"
+                            style={{ top: taskContextMenu.y, left: taskContextMenu.x }}
+                            onClick={(e) => e.stopPropagation()}
+                            onContextMenu={(e) => e.preventDefault()}
+                        >
+                            <button
+                                onClick={() => {
+                                    setDetailTaskId(taskContextMenu.taskId);
+                                    setDetailTaskEditing(true);
+                                    setTaskContextMenu(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted/40 transition-colors"
+                            >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit task
+                            </button>
+                            <div className="mx-3 my-1 h-px bg-border" />
+                            <button
+                                onClick={() => {
+                                    archiveTask(taskContextMenu.taskId);
+                                    setTaskContextMenu(null);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 transition-colors"
+                            >
+                                <Archive className="h-3.5 w-3.5" />
+                                Archive task
+                            </button>
+                        </div>
+                    );
+                })()}
 
             {/* Add Column dialog */}
             <Dialog
