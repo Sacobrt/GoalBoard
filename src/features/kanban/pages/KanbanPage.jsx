@@ -4,7 +4,7 @@ import { useBoardStore } from "../../board/store/boardStore";
 import { useAuthStore } from "../../auth/store/authStore";
 import { Board } from "../components/Board";
 import { Button } from "../../../components/ui/button";
-import { Settings, LogOut, Check, X } from "lucide-react";
+import { Settings, Check, X, Lock, PlayCircle } from "lucide-react";
 import { Input } from "../../../components/ui/input";
 import {
     AlertDialog,
@@ -22,7 +22,7 @@ export function KanbanPage() {
     const { boardId } = useParams();
     const user = useAuthStore((s) => s.user);
     const userId = user?.id;
-    const { updateBoard, removeMember } = useBoardStore();
+    const { updateBoard, removeMember, boardStages, setBoardStage } = useBoardStore();
     const board = useBoardStore((s) => s.boards.find((b) => b.id === boardId));
     const navigate = useNavigate();
 
@@ -59,6 +59,10 @@ export function KanbanPage() {
 
     const isOwner = board.ownerId === userId;
 
+    const boardStage = boardStages?.[board.id] ?? null;
+    const isCompleted = boardStage === "completed";
+    const effectiveRole = isCompleted && !isOwner ? "viewer" : userRole;
+
     function saveTitle() {
         if (draftTitle.trim() && draftTitle.trim() !== board.name) {
             updateBoard(board.id, { name: draftTitle.trim() });
@@ -68,6 +72,28 @@ export function KanbanPage() {
 
     return (
         <section className="py-6 animate-fade-in relative">
+            {/* Completed lock banner */}
+            {isCompleted && (
+                <div
+                    className={`flex items-center gap-3 rounded-xl border px-4 py-3 mb-4 text-sm ${
+                        isOwner ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"
+                    }`}
+                >
+                    <Lock className="h-4 w-4 shrink-0" />
+                    <span className="flex-1">
+                        {isOwner ? (
+                            <>
+                                This board is marked as <strong>Completed</strong>. Members cannot edit or add tasks. You can reactivate it via Board Settings.
+                            </>
+                        ) : (
+                            <>
+                                This board is <strong>completed</strong> and locked. Only the board owner can make changes.
+                            </>
+                        )}
+                    </span>
+                </div>
+            )}
+
             <div className="flex items-center justify-between mb-6 group">
                 <div className="flex items-center gap-3 relative">
                     {editingTitle ? (
@@ -88,9 +114,9 @@ export function KanbanPage() {
                         </div>
                     ) : (
                         <h1
-                            className={`text-2xl font-bold text-foreground ${userRole !== "viewer" ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
+                            className={`text-2xl font-bold text-foreground ${effectiveRole !== "viewer" ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
                             onClick={() => {
-                                if (userRole !== "viewer") {
+                                if (effectiveRole !== "viewer") {
                                     setDraftTitle(board.name);
                                     setEditingTitle(true);
                                 }
@@ -104,7 +130,7 @@ export function KanbanPage() {
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => navigate(`/board/${boardId}/settings`)}>
                         <Settings className="h-4 w-4" />
-                        <span className="hidden sm:inline">Settings</span>
+                        <span className="hidden sm:inline">Board Settings</span>
                     </Button>
                 </div>
             </div>
@@ -130,7 +156,7 @@ export function KanbanPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <Board board={board} userRole={userRole} />
+            <Board board={board} userRole={effectiveRole} />
         </section>
     );
 }
