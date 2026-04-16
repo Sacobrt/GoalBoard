@@ -16,7 +16,7 @@ import {
     AlertDialogAction,
 } from "../../../components/ui/alert-dialog";
 
-export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, isOverlay = false, userRole }) {
+export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, onContextMenu, isOverlay = false, userRole }) {
     const isViewer = userRole === "viewer";
     const [archiveOpen, setArchiveOpen] = useState(false);
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -49,6 +49,13 @@ export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, i
             {...(isOverlay ? {} : attributes)}
             {...(isOverlay ? {} : listeners)}
             className="outline-none touch-manipulation cursor-grab active:cursor-grabbing"
+            onContextMenu={(e) => {
+                if (!isOverlay && !isViewer && onContextMenu) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onContextMenu(e.clientX, e.clientY, task.id);
+                }
+            }}
             onClick={(e) => {
                 // Only open detail if not dragging and not clicking menu
                 if (!isDragging && !isOverlay && onClick && e.target.closest("[data-no-click]") === null) {
