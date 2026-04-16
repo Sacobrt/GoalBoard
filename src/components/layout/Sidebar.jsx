@@ -124,7 +124,7 @@ export function Sidebar() {
                 )}
 
                 {/* Board list */}
-                <div className={cn("space-y-1", !collapsed && "max-h-48 overflow-y-auto")}>
+                <div>
                     {filteredSidebarBoards.map((board) => (
                         <NavLink
                             key={board.id}
