@@ -11,7 +11,7 @@ export const taskSchema = z.object({
         .trim()
         .transform((val) => (val === "" ? undefined : val))
         .optional()
-        .pipe(z.string().min(10, "Description must be at least 10 characters").max(2000, "Description must be less than 2000 characters").optional()),
+        .pipe(z.string().min(3, "Description must be at least 3 characters").max(2000, "Description must be less than 2000 characters").optional()),
     priorityIds: z.array(z.string()).default([]),
     assigneeIds: z.array(z.string()).default([]),
     dueDate: z.date({ invalid_type_error: "Invalid date" }).nullable().default(null),
