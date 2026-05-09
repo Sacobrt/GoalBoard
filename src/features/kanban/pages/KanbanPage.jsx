@@ -35,8 +35,8 @@ export function KanbanPage() {
         return (
             <section className="py-20 text-center">
                 <p className="text-sm text-muted-foreground">Board not found.</p>
-                <Button variant="outline" size="sm" asChild className="mt-4">
-                    <Link to="/dashboard">Back to overview</Link>
+                <Button variant="outline" size="sm" render={<Link to="/dashboard" />} className="mt-4">
+                    Back to overview
                 </Button>
             </section>
         );
@@ -51,8 +51,8 @@ export function KanbanPage() {
         return (
             <section className="py-20 text-center">
                 <p className="text-sm text-muted-foreground">You don't have access to this board.</p>
-                <Button variant="outline" size="sm" asChild className="mt-4">
-                    <Link to="/dashboard">Back to overview</Link>
+                <Button variant="outline" size="sm" render={<Link to="/dashboard" />} className="mt-4">
+                    Back to overview
                 </Button>
             </section>
         );

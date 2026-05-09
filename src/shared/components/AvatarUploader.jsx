@@ -146,10 +146,8 @@ export function AvatarUploader({ user, onAvatarChange }) {
                     </div>
 
                     <DialogFooter>
-                        <DialogClose asChild>
-                            <Button variant="outline" disabled={isProcessing}>
-                                Cancel
-                            </Button>
+                        <DialogClose render={<Button variant="outline" disabled={isProcessing} />}>
+                            Cancel
                         </DialogClose>
                         <Button onClick={handleSaveCrop} disabled={isProcessing}>
                             {isProcessing ? "Saving..." : "Save Image"}

@@ -192,24 +192,22 @@ export function AddTaskDialog({ open, onOpenChange, onAdd, priorities = [], defa
                                         </FormLabel>
                                         <FormControl>
                                             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                                                <PopoverTrigger asChild>
-                                                    <Button type="button" variant="outline" className="w-full justify-start text-left font-normal h-9">
-                                                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                                                        {field.value ? (
-                                                            format(field.value, "MMM d, yyyy 'at' HH:mm")
-                                                        ) : (
-                                                            <span className="text-muted-foreground">Pick a date & time</span>
-                                                        )}
-                                                        {field.value && (
-                                                            <X
-                                                                className="ml-auto h-3.5 w-3.5 opacity-50 hover:opacity-100"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    field.onChange(null);
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </Button>
+                                                <PopoverTrigger render={<Button type="button" variant="outline" className="w-full justify-start text-left font-normal h-9" />}>
+                                                    <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                    {field.value ? (
+                                                        format(field.value, "MMM d, yyyy 'at' HH:mm")
+                                                    ) : (
+                                                        <span className="text-muted-foreground">Pick a date & time</span>
+                                                    )}
+                                                    {field.value && (
+                                                        <X
+                                                            className="ml-auto h-3.5 w-3.5 opacity-50 hover:opacity-100"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                field.onChange(null);
+                                                            }}
+                                                        />
+                                                    )}
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-auto p-0" align="start">
                                                     <DateTimePicker selected={field.value} onSelect={(date) => field.onChange(date)} />
@@ -305,10 +303,8 @@ export function AddTaskDialog({ open, onOpenChange, onAdd, priorities = [], defa
                         </div>
 
                         <DialogFooter className="mt-4">
-                            <DialogClose asChild>
-                                <Button type="button" variant="outline">
-                                    Cancel
-                                </Button>
+                            <DialogClose render={<Button type="button" variant="outline" />}>
+                                Cancel
                             </DialogClose>
                             <Button type="submit">Add Task</Button>
                         </DialogFooter>

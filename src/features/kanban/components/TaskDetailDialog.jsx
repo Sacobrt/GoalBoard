@@ -203,20 +203,18 @@ export function TaskDetailDialog({
                             {/* Due date */}
                             {editing ? (
                                 <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                                    <PopoverTrigger asChild>
-                                        <Button type="button" variant="outline" size="sm" className="h-8 text-xs">
-                                            <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-slate-400" />
-                                            {dueDate ? format(dueDate, "MMM d, yyyy 'at' HH:mm") : "Set date & time"}
-                                            {dueDate && (
-                                                <X
-                                                    className="ml-1.5 h-3 w-3 opacity-50 hover:opacity-100"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDueDate(null);
-                                                    }}
-                                                />
-                                            )}
-                                        </Button>
+                                    <PopoverTrigger render={<Button type="button" variant="outline" size="sm" className="h-8 text-xs" />}>
+                                        <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-slate-400" />
+                                        {dueDate ? format(dueDate, "MMM d, yyyy 'at' HH:mm") : "Set date & time"}
+                                        {dueDate && (
+                                            <X
+                                                className="ml-1.5 h-3 w-3 opacity-50 hover:opacity-100"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDueDate(null);
+                                                }}
+                                            />
+                                        )}
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
                                         <DateTimePicker selected={dueDate} onSelect={setDueDate} />

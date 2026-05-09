@@ -208,21 +208,19 @@ export function WorkloadTracker({ board, tasks }) {
                 </div>
 
                 <Popover>
-                    <PopoverTrigger asChild>
-                        <div className="inline-flex items-center gap-1.5 border border-input rounded-lg px-3 h-8 text-sm cursor-pointer bg-background hover:bg-accent transition-colors">
-                            <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                            {dateRange?.from ? (
-                                dateRange.to ? (
-                                    <span>
-                                        {format(dateRange.from, "LLL dd, y")} – {format(dateRange.to, "LLL dd, y")}
-                                    </span>
-                                ) : (
-                                    format(dateRange.from, "LLL dd, y")
-                                )
+                    <PopoverTrigger render={<div className="inline-flex items-center gap-1.5 border border-input rounded-lg px-3 h-8 text-sm cursor-pointer bg-background hover:bg-accent transition-colors" />}>
+                        <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        {dateRange?.from ? (
+                            dateRange.to ? (
+                                <span>
+                                    {format(dateRange.from, "LLL dd, y")} – {format(dateRange.to, "LLL dd, y")}
+                                </span>
                             ) : (
-                                <span className="text-muted-foreground">Pick a date range</span>
-                            )}
-                        </div>
+                                format(dateRange.from, "LLL dd, y")
+                            )
+                        ) : (
+                            <span className="text-muted-foreground">Pick a date range</span>
+                        )}
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 flex" align="end">
                         <div className="border-r border-border p-3 hidden sm:flex flex-col gap-1 w-36">

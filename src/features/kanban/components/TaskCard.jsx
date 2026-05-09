@@ -76,15 +76,17 @@ export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, o
                     {!isOverlay && !isViewer && (
                         <>
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        data-no-click
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
-                                    >
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
+                                <DropdownMenuTrigger
+                                    render={
+                                        <Button
+                                            data-no-click
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                        />
+                                    }
+                                >
+                                    <MoreHorizontal className="h-4 w-4" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                     <DropdownMenuItem onClick={() => onEdit(task)}>

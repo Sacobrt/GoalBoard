@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { useNavigate } from "react-router-dom";
 import {
@@ -544,10 +544,12 @@ function OverdueTaskItem({ task, showBoard, onMarkDone, onGoToBoard }) {
                 </Button>
 
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-xs" aria-label={`More actions for "${task.title}"`}>
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                        </Button>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button variant="ghost" size="icon-xs" aria-label={`More actions for "${task.title}"`} />
+                        }
+                    >
+                        <MoreHorizontal className="h-3.5 w-3.5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent side="left" align="start">
                         <DropdownMenuItem className="gap-2 text-emerald-700 focus:bg-emerald-50 focus:text-emerald-700" onClick={() => onMarkDone(task)}>
