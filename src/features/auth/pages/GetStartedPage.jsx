@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Eye, EyeOff, AlertCircle, ArrowRight, Zap, Shield, Users, UserCircle } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "../../../components/ui/form";
+import { registerSchema } from "../schemas/authSchemas";
 
 const benefits = [
     { icon: Zap, title: "Instant setup", desc: "Create your first board in under 30 seconds." },
@@ -18,50 +22,35 @@ export function GetStartedPage() {
     const user = useAuthStore((s) => s.user);
     const navigate = useNavigate();
 
-    const [username, setUsername] = useState("");
-    const [fullName, setFullName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirm, setConfirm] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState("");
+    const [serverError, setServerError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const form = useForm({
+        resolver: zodResolver(registerSchema),
+        defaultValues: { username: "", fullName: "", email: "", password: "", confirm: "" },
+        mode: "onTouched",
+    });
+
+    const watchedPassword = form.watch("password");
 
     if (user) {
         navigate("/dashboard", { replace: true });
         return null;
     }
 
-    const passwordStrength = password.length === 0 ? null : password.length < 6 ? "weak" : password.length < 10 ? "fair" : "strong";
+    const passwordStrength = watchedPassword.length === 0 ? null : watchedPassword.length < 6 ? "weak" : watchedPassword.length < 10 ? "fair" : "strong";
     const strengthColor = { weak: "#ef4444", fair: "#f59e0b", strong: "#10b981" };
     const strengthWidth = { weak: "33%", fair: "66%", strong: "100%" };
 
-    async function handleSubmit(e) {
-        e.preventDefault();
-        setError("");
-        const trimmedUsername = username.trim();
-        if (!trimmedUsername || trimmedUsername.length < 2) {
-            setError("Username must be at least 2 characters.");
-            return;
-        }
-        if (!/^[a-zA-Z0-9_.-]+$/.test(trimmedUsername)) {
-            setError("Username can only contain letters, numbers, underscores, hyphens, and dots.");
-            return;
-        }
-        if (password !== confirm) {
-            setError("Passwords do not match.");
-            return;
-        }
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters.");
-            return;
-        }
+    async function onSubmit(data) {
+        setServerError("");
         setLoading(true);
-        const result = await register(trimmedUsername, email.trim(), password, fullName.trim());
+        const result = await register(data.username, data.email, data.password, data.fullName);
         setLoading(false);
 
         if (!result.ok) {
-            setError(result.error);
+            setServerError(result.error);
         } else {
             navigate("/dashboard", { replace: true });
         }
@@ -140,127 +129,164 @@ export function GetStartedPage() {
                                 <p className="text-sm text-slate-500 mt-1">No credit card required</p>
                             </div>
 
-                            {error && (
+                            {serverError && (
                                 <div className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 mb-5 text-sm text-red-600">
                                     <AlertCircle className="h-4 w-4 shrink-0" />
-                                    {error}
+                                    {serverError}
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-medium mb-1.5 text-slate-600">Username</label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            value={username}
-                                            onChange={(e) => setUsername(stripEmoji(e.target.value))}
-                                            placeholder="your_name"
-                                            className="pl-9"
-                                            required
-                                            minLength={2}
-                                            autoFocus
-                                            autoComplete="username"
-                                        />
-                                    </div>
-                                </div>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                                    <FormField
+                                        control={form.control}
+                                        name="username"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs text-slate-600">Username</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                        <Input
+                                                            {...field}
+                                                            onChange={(e) => field.onChange(stripEmoji(e.target.value))}
+                                                            placeholder="your_name"
+                                                            className="pl-9"
+                                                            autoFocus
+                                                            autoComplete="username"
+                                                            aria-invalid={!!form.formState.errors.username}
+                                                        />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
-                                <div>
-                                    <label className="block text-xs font-medium mb-1.5 text-slate-600">Full name</label>
-                                    <div className="relative">
-                                        <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            value={fullName}
-                                            onChange={(e) => setFullName(e.target.value)}
-                                            placeholder="John Doe"
-                                            className="pl-9"
-                                            autoComplete="name"
-                                        />
-                                    </div>
-                                </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="fullName"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs text-slate-600">Full name</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                        <Input {...field} placeholder="John Doe" className="pl-9" autoComplete="name" />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
-                                <div>
-                                    <label className="block text-xs font-medium mb-1.5 text-slate-600">Work email</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="you@company.com"
-                                            className="pl-9"
-                                            required
-                                            autoComplete="email"
-                                        />
-                                    </div>
-                                </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="email"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs text-slate-600">Work email</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                        <Input
+                                                            {...field}
+                                                            type="email"
+                                                            placeholder="you@company.com"
+                                                            className="pl-9"
+                                                            autoComplete="email"
+                                                            aria-invalid={!!form.formState.errors.email}
+                                                        />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
-                                <div>
-                                    <label className="block text-xs font-medium mb-1.5 text-slate-600">Password</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            type={showPassword ? "text" : "password"}
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            placeholder="At least 6 characters"
-                                            className="pl-9 pr-10"
-                                            required
-                                            autoComplete="new-password"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword((v) => !v)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400"
-                                            tabIndex={-1}
-                                        >
-                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </button>
-                                    </div>
-                                    {passwordStrength && (
-                                        <div className="mt-2">
-                                            <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
-                                                <div
-                                                    className="h-full rounded-full transition-all duration-300"
-                                                    style={{ width: strengthWidth[passwordStrength], background: strengthColor[passwordStrength] }}
-                                                />
-                                            </div>
-                                            <p className="text-[10px] mt-1 capitalize font-medium" style={{ color: strengthColor[passwordStrength] }}>
-                                                {passwordStrength}
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="password"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs text-slate-600">Password</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                        <Input
+                                                            {...field}
+                                                            type={showPassword ? "text" : "password"}
+                                                            placeholder="At least 6 characters"
+                                                            className="pl-9 pr-10"
+                                                            autoComplete="new-password"
+                                                            aria-invalid={!!form.formState.errors.password}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowPassword((v) => !v)}
+                                                            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400"
+                                                            tabIndex={-1}
+                                                        >
+                                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                        </button>
+                                                    </div>
+                                                </FormControl>
+                                                {passwordStrength && (
+                                                    <div className="mt-2">
+                                                        <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
+                                                            <div
+                                                                className="h-full rounded-full transition-all duration-300"
+                                                                style={{ width: strengthWidth[passwordStrength], background: strengthColor[passwordStrength] }}
+                                                            />
+                                                        </div>
+                                                        <p className="text-[10px] mt-1 capitalize font-medium" style={{ color: strengthColor[passwordStrength] }}>
+                                                            {passwordStrength}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
-                                <div>
-                                    <label className="block text-xs font-medium mb-1.5 text-slate-600">Confirm password</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <Input
-                                            type={showPassword ? "text" : "password"}
-                                            value={confirm}
-                                            onChange={(e) => setConfirm(e.target.value)}
-                                            placeholder="Repeat password"
-                                            className="pl-9"
-                                            required
-                                            autoComplete="new-password"
-                                        />
-                                    </div>
-                                </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="confirm"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs text-slate-600">Confirm password</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                        <Input
+                                                            {...field}
+                                                            type={showPassword ? "text" : "password"}
+                                                            placeholder="Repeat password"
+                                                            className="pl-9"
+                                                            autoComplete="new-password"
+                                                            aria-invalid={!!form.formState.errors.confirm}
+                                                        />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
 
-                                <Button type="submit" className="w-full mt-2 h-11 text-sm" disabled={loading}>
-                                    {loading ? (
-                                        <span className="flex items-center gap-2">
-                                            <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            Creating account...
-                                        </span>
-                                    ) : (
-                                        <span className="flex items-center gap-2">
-                                            Get started free <ArrowRight className="h-4 w-4" />
-                                        </span>
-                                    )}
-                                </Button>
-                            </form>
+                                    <Button type="submit" className="w-full mt-2 h-11 text-sm" disabled={loading}>
+                                        {loading ? (
+                                            <span className="flex items-center gap-2">
+                                                <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                Creating account...
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-2">
+                                                Get started free <ArrowRight className="h-4 w-4" />
+                                            </span>
+                                        )}
+                                    </Button>
+                                </form>
+                            </Form>
 
                             <p className="mt-5 text-center text-xs text-slate-400">By signing up, you agree to Goal Board's Terms of Service.</p>
                         </div>

@@ -9,6 +9,7 @@ import { HelpCenterPage } from "../features/landing/pages/HelpCenterPage";
 import { TermsPage } from "../features/landing/pages/TermsPage";
 import { KanbanPage } from "../features/kanban/pages/KanbanPage";
 import { BoardSettingsPage } from "../features/board/pages/BoardSettingsPage";
+import { WorkloadPage } from "../features/board/pages/WorkloadPage";
 import { AdminDashboard } from "../features/admin/pages/AdminDashboard";
 import { SettingsPage } from "../features/settings/pages/SettingsPage";
 import { ProtectedRoute } from "../shared/auth/ProtectedRoute";
@@ -21,8 +22,10 @@ export default function App() {
             <Route element={<PublicRoute />}>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<GetStartedPage />} />
-                <Route path="/request-demo" element={<RequestDemoPage />} />
             </Route>
+
+            {/* Accessible to everyone (logged-in or not) */}
+            <Route path="/request-demo" element={<RequestDemoPage />} />
 
             {/* Landing page — accessible to everyone (logged-in or not) */}
             <Route path="/" element={<LandingPage />} />
@@ -36,6 +39,7 @@ export default function App() {
                 <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/board/:boardId" element={<KanbanPage />} />
                 <Route path="/board/:boardId/settings" element={<BoardSettingsPage />} />
+                <Route path="/board/:boardId/workload" element={<WorkloadPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route
                     path="/admin"

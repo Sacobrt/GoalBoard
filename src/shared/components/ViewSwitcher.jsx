@@ -72,15 +72,8 @@ export function ViewSwitcher({ view, onViewChange, disabled = false }) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-full">
                         <DropdownMenuGroup>
-                            <DropdownMenuLabel>Power views</DropdownMenuLabel>
-                            {SECONDARY_VIEWS.slice(0, 3).map((v) => (
-                                <ViewDropdownItem key={v.id} v={v} active={view === v.id} onSelect={onViewChange} />
-                            ))}
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuLabel>Utility views</DropdownMenuLabel>
-                            {SECONDARY_VIEWS.slice(3).map((v) => (
+                            <DropdownMenuLabel>Views</DropdownMenuLabel>
+                            {SECONDARY_VIEWS.map((v) => (
                                 <ViewDropdownItem key={v.id} v={v} active={view === v.id} onSelect={onViewChange} />
                             ))}
                         </DropdownMenuGroup>

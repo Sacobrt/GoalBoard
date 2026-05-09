@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { Search, X, Archive, Plus, Check, Pencil } from "lucide-react";
 import { Column } from "./Column";
@@ -24,6 +25,7 @@ export function Board({ board, userRole }) {
     const [detailTaskId, setDetailTaskId] = useState(null);
     const [detailTaskEditing, setDetailTaskEditing] = useState(false);
     const [activeTaskId, setActiveTaskId] = useState(null);
+    const [activeColumnId, setActiveColumnId] = useState(null);
     const [search, setSearch] = useState("");
     const [filterPriorityId, setFilterPriorityId] = useState("all");
     const [showArchived, setShowArchived] = useState(false);
@@ -62,16 +64,38 @@ export function Board({ board, userRole }) {
     });
 
     function handleDragStart({ active }) {
+        if (active.data.current?.type === "Column") {
+            setActiveColumnId(String(active.id));
+            return;
+        }
         setActiveTaskId(String(active.id));
     }
 
     function handleDragEnd({ active, over }) {
         setActiveTaskId(null);
+        setActiveColumnId(null);
         if (!over) return;
 
         const activeId = String(active.id);
         const overId = String(over.id);
         if (activeId === overId) return;
+
+        const isActiveColumn = active.data.current?.type === "Column";
+        if (isActiveColumn) {
+            const activeColIndex = columns.findIndex((c) => c.id === activeId);
+            const overColIndex = columns.findIndex((c) => c.id === overId);
+
+            if (activeColIndex !== -1 && overColIndex !== -1) {
+                const newColumns = [...columns];
+                const [moved] = newColumns.splice(activeColIndex, 1);
+                newColumns.splice(overColIndex, 0, moved);
+
+                // Update orders
+                const updatedColumns = newColumns.map((c, i) => ({ ...c, order: i }));
+                useBoardStore.getState().updateBoard(board.id, { columns: updatedColumns });
+            }
+            return;
+        }
 
         const task = tasks.find((t) => t.id === activeId);
         if (!task) return;
@@ -159,57 +183,60 @@ export function Board({ board, userRole }) {
                 onDragCancel={() => setActiveTaskId(null)}
             >
                 <div className="flex gap-4 overflow-x-auto pb-4 items-start min-h-125">
-                    {columns.map((column) => {
-                        const columnTasks = filteredTasks.filter((t) => t.columnId === column.id);
-                        const totalInCol = tasks.filter((t) => t.columnId === column.id).length;
-                        return (
-                            <div key={column.id} className="w-72 shrink-0 h-full">
-                                <Column
-                                    column={column}
-                                    taskCount={columnTasks.length}
-                                    totalCount={totalInCol}
-                                    taskIds={columnTasks.map((t) => t.id)}
-                                    userRole={userRole}
-                                    onUpdateTitle={(title) => updateColumn(column.id, { title })}
-                                    onAddTask={() => {
-                                        setAddTaskColumnId(column.id);
-                                        setAddTaskOpen(true);
-                                    }}
-                                    onArchiveColumn={() => archiveColumnTasks(board.id, column.id)}
-                                    onRemoveColumn={() => removeColumn(board.id, column.id)}
-                                >
-                                    {columnTasks.map((task, i) => (
-                                        <div key={task.id} className="animate-slide-up" style={{ animationDelay: `${i * 30}ms` }}>
-                                            <TaskCard
-                                                task={task}
-                                                priorityMap={priorityMap}
-                                                onEdit={(t) => {
-                                                    setDetailTaskId(t.id);
-                                                    setDetailTaskEditing(true);
-                                                }}
-                                                onClick={(t) => {
-                                                    setDetailTaskId(t.id);
-                                                    setDetailTaskEditing(false);
-                                                }}
-                                                onArchive={archiveTask}
-                                                onContextMenu={(x, y, taskId) => setTaskContextMenu({ x, y, taskId })}
-                                                userRole={userRole}
-                                            />
-                                        </div>
-                                    ))}
-                                    {columnTasks.length === 0 && (
-                                        <div className="flex flex-col items-center justify-center py-10 text-center">
-                                            <p className="text-xs text-muted-foreground">
-                                                {search || filterPriorityId !== "all" ? "No matching tasks" : "Drop tasks here"}
-                                            </p>
-                                        </div>
-                                    )}
-                                </Column>
-                            </div>
-                        );
-                    })}
+                    <SortableContext items={columns.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+                        {columns.map((column) => {
+                            const columnTasks = filteredTasks.filter((t) => t.columnId === column.id);
+                            const totalInCol = tasks.filter((t) => t.columnId === column.id).length;
+                            return (
+                                <div key={column.id} className="w-72 shrink-0 h-full">
+                                    <Column
+                                        column={column}
+                                        taskCount={columnTasks.length}
+                                        totalCount={totalInCol}
+                                        taskIds={columnTasks.map((t) => t.id)}
+                                        userRole={userRole}
+                                        isDragging={activeTaskId !== null}
+                                        onUpdateTitle={(title) => updateColumn(board.id, column.id, { title })}
+                                        onAddTask={() => {
+                                            setAddTaskColumnId(column.id);
+                                            setAddTaskOpen(true);
+                                        }}
+                                        onArchiveColumn={() => archiveColumnTasks(board.id, column.id)}
+                                        onRemoveColumn={() => removeColumn(board.id, column.id)}
+                                    >
+                                        {columnTasks.map((task, i) => (
+                                            <div key={task.id} className="animate-slide-up" style={{ animationDelay: `${i * 30}ms` }}>
+                                                <TaskCard
+                                                    task={task}
+                                                    priorityMap={priorityMap}
+                                                    onEdit={(t) => {
+                                                        setDetailTaskId(t.id);
+                                                        setDetailTaskEditing(true);
+                                                    }}
+                                                    onClick={(t) => {
+                                                        setDetailTaskId(t.id);
+                                                        setDetailTaskEditing(false);
+                                                    }}
+                                                    onArchive={archiveTask}
+                                                    onContextMenu={(x, y, taskId) => setTaskContextMenu({ x, y, taskId })}
+                                                    userRole={userRole}
+                                                />
+                                            </div>
+                                        ))}
+                                        {columnTasks.length === 0 && !activeTaskId && (
+                                            <div className="flex flex-col items-center justify-center py-10 text-center">
+                                                <p className="text-xs text-muted-foreground">
+                                                    {search || filterPriorityId !== "all" ? "No matching tasks" : "No tasks yet"}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </Column>
+                                </div>
+                            );
+                        })}
+                    </SortableContext>
 
-                    {userRole !== "viewer" && (
+                    {userRole === "owner" && (
                         <div className="w-72 shrink-0 h-full flex flex-col">
                             <button
                                 onClick={() => setAddColOpen(true)}
@@ -233,6 +260,16 @@ export function Board({ board, userRole }) {
                             userRole={userRole}
                         />
                     ) : null}
+                    {activeColumnId ? (
+                        <div className="w-72 shrink-0 h-full">
+                            <Column
+                                column={columns.find((c) => c.id === activeColumnId) || {}}
+                                taskCount={tasks.filter((t) => t.columnId === activeColumnId).length}
+                                userRole={userRole}
+                                isOverlay
+                            />
+                        </div>
+                    ) : null}
                 </DragOverlay>
             </DndContext>
 
@@ -243,6 +280,7 @@ export function Board({ board, userRole }) {
                 priorities={priorities}
                 defaultColumnId={addTaskColumnId}
                 members={members}
+                hasBudget={!!board.budget}
             />
 
             <TaskDetailDialog
@@ -260,6 +298,7 @@ export function Board({ board, userRole }) {
                 members={members}
                 userRole={userRole}
                 initialEditing={detailTaskEditing}
+                hasBudget={!!board.budget}
             />
 
             {showArchived && (

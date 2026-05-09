@@ -1,20 +1,28 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "../../../components/ui/form";
+import { loginSchema } from "../schemas/authSchemas";
 
 export function LoginPage() {
     const login = useAuthStore((s) => s.login);
     const user = useAuthStore((s) => s.user);
     const navigate = useNavigate();
 
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState("");
+    const [serverError, setServerError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const form = useForm({
+        resolver: zodResolver(loginSchema),
+        defaultValues: { email: "", password: "" },
+        mode: "onTouched",
+    });
 
     // Redirect if already logged in
     if (user) {
@@ -22,14 +30,13 @@ export function LoginPage() {
         return null;
     }
 
-    async function handleSubmit(e) {
-        e.preventDefault();
-        setError("");
+    async function onSubmit(data) {
+        setServerError("");
         setLoading(true);
-        const result = await login(email, password);
+        const result = await login(data.email, data.password);
         setLoading(false);
         if (!result.ok) {
-            setError(result.error);
+            setServerError(result.error);
         } else {
             navigate("/dashboard", { replace: true });
         }
@@ -58,10 +65,10 @@ export function LoginPage() {
                     </div>
 
                     {/* Error */}
-                    {error && (
+                    {serverError && (
                         <div className="animate-slide-up flex items-center gap-2.5 rounded-lg border border-red-500/25 bg-red-500/10 px-4 py-3 mb-5 text-sm text-red-400">
                             <AlertCircle className="h-4 w-4 shrink-0" />
-                            {error}
+                            {serverError}
                         </div>
                     )}
 
@@ -75,8 +82,8 @@ export function LoginPage() {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setEmail("admin@example.com");
-                                    setPassword("admin");
+                                    form.setValue("email", "admin@example.com");
+                                    form.setValue("password", "admin");
                                 }}
                                 className="text-primary hover:underline"
                             >
@@ -90,8 +97,8 @@ export function LoginPage() {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setEmail("demo@example.com");
-                                    setPassword("demo");
+                                    form.setValue("email", "demo@example.com");
+                                    form.setValue("password", "demo");
                                 }}
                                 className="text-primary hover:underline"
                             >
@@ -100,59 +107,77 @@ export function LoginPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Email address</label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="you@example.com"
-                                    className="pl-9"
-                                    required
-                                    autoComplete="email"
-                                    autoFocus
-                                />
-                            </div>
-                        </div>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs text-muted-foreground">Email address</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    {...field}
+                                                    type="email"
+                                                    placeholder="you@example.com"
+                                                    className="pl-9"
+                                                    autoComplete="email"
+                                                    autoFocus
+                                                    aria-invalid={!!form.formState.errors.email}
+                                                />
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                        <div>
-                            <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Password</label>
-                            <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type={showPassword ? "text" : "password"}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="pl-9 pr-10"
-                                    required
-                                    autoComplete="current-password"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword((v) => !v)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded transition-colors text-muted-foreground"
-                                    tabIndex={-1}
-                                >
-                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                </button>
-                            </div>
-                        </div>
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs text-muted-foreground">Password</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    {...field}
+                                                    type={showPassword ? "text" : "password"}
+                                                    placeholder="••••••••"
+                                                    className="pl-9 pr-10"
+                                                    autoComplete="current-password"
+                                                    aria-invalid={!!form.formState.errors.password}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword((v) => !v)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded transition-colors text-muted-foreground"
+                                                    tabIndex={-1}
+                                                >
+                                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                </button>
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-                        <Button type="submit" className="w-full mt-2" disabled={loading}>
-                            {loading ? (
-                                <span className="flex items-center gap-2">
-                                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Signing in...
-                                </span>
-                            ) : (
-                                "Sign in"
-                            )}
-                        </Button>
-                    </form>
+                            <Button type="submit" className="w-full mt-2" disabled={loading}>
+                                {loading ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Signing in...
+                                    </span>
+                                ) : (
+                                    "Sign in"
+                                )}
+                            </Button>
+                        </form>
+                    </Form>
 
                     <p className="mt-6 text-center text-sm text-muted-foreground">
                         Don't have an account?{" "}

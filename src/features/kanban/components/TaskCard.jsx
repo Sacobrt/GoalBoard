@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MoreHorizontal, Pencil, Archive, CalendarClock, User } from "lucide-react";
+import { MoreHorizontal, Pencil, Archive, CalendarClock, User, Euro } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { Button } from "../../../components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
@@ -155,6 +155,14 @@ export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, o
                         >
                             <CalendarClock className="h-3 w-3" />
                             {isOverdue ? "Overdue" : isDueToday ? "Today" : dueDateDay}
+                        </span>
+                    )}
+
+                    {/* Cost badge */}
+                    {task.cost > 0 && (
+                        <span className="flex items-center gap-0.5 text-[10px] rounded px-1.5 py-0.5 font-medium bg-emerald-50 text-emerald-600">
+                            <Euro className="h-3 w-3" />
+                            {task.cost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                         </span>
                     )}
 

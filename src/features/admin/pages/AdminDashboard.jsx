@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
     Users,
     Shield,
@@ -41,6 +42,27 @@ import { Button } from "../../../components/ui/button";
 import { UserAvatar } from "../../../shared/components/UserAvatar";
 import { useBoardStore } from "../../board/store/boardStore";
 import { useDemoRequestStore } from "../store/demoRequestStore";
+import { useNotificationStore } from "../../notifications/store/notificationStore";
+import { timeAgo } from "../../../shared/utils/timeAgo";
+import { profileSchema } from "../../settings/schemas/profileSchema";
+
+const adminEditSchema = profileSchema.omit({ username: true });
+
+const DEMO_GRANT_DETAIL = `Your demo board "Demo Project" has been created and is ready on your dashboard.
+
+What's included:
+  • A fully pre-populated Kanban board with realistic tasks
+  • Columns: Planning, Doing, Review, Done
+  • Sample tasks with due dates, labels, priorities, and descriptions
+  • Workload tracker & team member simulation
+
+Getting started:
+  1. Open your Dashboard and find the "Demo Project" board
+  2. Click any task card to explore task details
+  3. Drag cards between columns to experience the Kanban workflow
+  4. Visit Board Settings to explore customisation options
+
+Enjoy exploring Goal Board! Reach out if you have any questions.`;
 
 function getAllUsers() {
     return JSON.parse(localStorage.getItem("goalboard_users") ?? "[]");
@@ -50,7 +72,15 @@ export function AdminDashboard() {
     const currentUser = useAuthStore((s) => s.user);
     const [search, setSearch] = useState("");
     const [users, setUsers] = useState(getAllUsers);
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState("users"); // "users" | "boards" | "demos"
+
+    useEffect(() => {
+        const tab = new URLSearchParams(location.search).get("tab");
+        if (tab === "demos" || tab === "boards" || tab === "users") {
+            setActiveTab(tab);
+        }
+    }, [location.search]);
 
     // Board management
     const boards = useBoardStore((s) => s.boards);
@@ -60,7 +90,10 @@ export function AdminDashboard() {
     const demoRequests = useDemoRequestStore((s) => s.requests);
     const updateDemoStatus = useDemoRequestStore((s) => s.updateStatus);
     const deleteDemoRequest = useDemoRequestStore((s) => s.deleteRequest);
+    const grantDemo = useDemoRequestStore((s) => s.grantDemo);
     const newDemoCount = demoRequests.filter((r) => r.status === "new").length;
+
+    const [grantDemoReq, setGrantDemoReq] = useState(null); // The request being granted
 
     const PAGE_SIZE = 10;
     const [currentPage, setCurrentPage] = useState(1);
@@ -123,9 +156,11 @@ export function AdminDashboard() {
     const [editUserId, setEditUserId] = useState(null);
     const editingUser = users.find((u) => u.id === editUserId);
     const [editForm, setEditForm] = useState({});
+    const [editErrors, setEditErrors] = useState({});
 
     function openEditUser(u) {
         setEditUserId(u.id);
+        setEditErrors({});
         setEditForm({
             fullName: u.fullName ?? "",
             bio: u.bio ?? "",
@@ -147,15 +182,18 @@ export function AdminDashboard() {
 
     function saveEditUser() {
         if (!editUserId) return;
-        const patch = {
-            fullName: editForm.fullName.trim(),
-            bio: editForm.bio.trim(),
-            website: editForm.website.trim(),
-            location: editForm.location.trim(),
-            organization: editForm.organization.trim(),
-            jobTitle: editForm.jobTitle.trim(),
-            education: editForm.education.trim(),
-        };
+        const result = adminEditSchema.safeParse(editForm);
+        if (!result.success) {
+            const fieldErrors = {};
+            for (const issue of result.error.issues) {
+                const field = issue.path[0];
+                if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+            }
+            setEditErrors(fieldErrors);
+            return;
+        }
+        setEditErrors({});
+        const patch = result.data;
         const updated = users.map((u) => (u.id === editUserId ? { ...u, ...patch } : u));
         localStorage.setItem("goalboard_users", JSON.stringify(updated));
         setUsers(updated);
@@ -550,59 +588,118 @@ export function AdminDashboard() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border bg-muted">
-                                    <th className="text-left text-xs font-semibold px-5 py-3 text-muted-foreground">Requester</th>
-                                    <th className="text-left text-xs font-semibold px-5 py-3 text-muted-foreground">Company</th>
-                                    <th className="text-left text-xs font-semibold px-5 py-3 text-muted-foreground">Message</th>
-                                    <th className="text-left text-xs font-semibold px-5 py-3 text-muted-foreground">Date</th>
-                                    <th className="text-left text-xs font-semibold px-5 py-3 text-muted-foreground">Status</th>
-                                    <th className="text-right text-xs font-semibold px-5 py-3 text-muted-foreground">Actions</th>
+                                    <th className="text-left text-xs font-semibold px-4 py-2.5 text-muted-foreground">Requester</th>
+                                    <th className="text-left text-xs font-semibold px-4 py-2.5 text-muted-foreground hidden md:table-cell">Details</th>
+                                    <th className="text-left text-xs font-semibold px-4 py-2.5 text-muted-foreground hidden lg:table-cell">Submitted</th>
+                                    <th className="text-left text-xs font-semibold px-4 py-2.5 text-muted-foreground">Status</th>
+                                    <th className="text-right text-xs font-semibold px-4 py-2.5 text-muted-foreground">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedDemos.map((r) => (
-                                    <tr key={r.id} className="border-b border-border last:border-b-0 transition-colors hover:bg-muted">
-                                        <td className="px-5 py-3">
-                                            <p className="text-sm font-medium text-foreground">{r.name}</p>
-                                            <p className="text-xs mt-0.5 text-muted-foreground">{r.email}</p>
-                                        </td>
-                                        <td className="px-5 py-3 text-sm text-muted-foreground">{r.company || "—"}</td>
-                                        <td className="px-5 py-3 max-w-xs">
-                                            <p className="text-sm text-muted-foreground truncate">
-                                                {r.message || <span className="italic text-muted-foreground">No message</span>}
-                                            </p>
-                                        </td>
-                                        <td className="px-5 py-3">
-                                            <span className="text-xs text-muted-foreground">{new Date(r.createdAt).toLocaleDateString()}</span>
-                                        </td>
-                                        <td className="px-5 py-3">
-                                            <select
-                                                value={r.status}
-                                                onChange={(e) => updateDemoStatus(r.id, e.target.value)}
-                                                className={`text-xs font-medium rounded-lg px-2.5 py-1.5 border border-border cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring ${STATUS_COLORS[r.status]}`}
-                                                style={{ background: "transparent" }}
-                                            >
-                                                {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                                                    <option key={val} value={val}>
-                                                        {label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </td>
-                                        <td className="px-5 py-3 text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => setDeleteDemoId(r.id)}
-                                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {paginatedDemos.map((r) => {
+                                    const isLinked = !!(r.userId && allUsers.find((u) => u.id === r.userId));
+                                    const hasEmailMatch = !r.userId && allUsers.some((u) => u.email.toLowerCase() === r.email.toLowerCase());
+                                    const isRegistered = isLinked || hasEmailMatch;
+                                    return (
+                                        <tr key={r.id} className="border-b border-border last:border-b-0 transition-colors hover:bg-muted/50 group">
+                                            {/* Requester */}
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-7 h-7 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold shrink-0 select-none">
+                                                        {r.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium text-foreground leading-tight">{r.name}</p>
+                                                        <p className="text-xs text-muted-foreground truncate">{r.email}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-1.5 pl-9 flex flex-wrap gap-1">
+                                                    {isLinked && (
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5">
+                                                            <Check className="h-2.5 w-2.5" /> Registered
+                                                        </span>
+                                                    )}
+                                                    {hasEmailMatch && (
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-1.5 py-0.5">
+                                                            <Check className="h-2.5 w-2.5" /> Account found
+                                                        </span>
+                                                    )}
+                                                    {!isRegistered && (
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5">
+                                                            Not registered
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            {/* Details: company + message */}
+                                            <td className="px-4 py-3 hidden md:table-cell max-w-55">
+                                                {r.company && (
+                                                    <div className="flex items-center gap-1 text-xs text-muted-foreground mb-0.5">
+                                                        <Building2 className="h-3 w-3 shrink-0" />
+                                                        <span className="truncate font-medium text-foreground">{r.company}</span>
+                                                    </div>
+                                                )}
+                                                <p className="text-xs text-muted-foreground truncate" title={r.message || undefined}>
+                                                    {r.message ? r.message : <span className="italic">No message</span>}
+                                                </p>
+                                            </td>
+                                            {/* Submitted */}
+                                            <td className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">
+                                                <span className="text-xs text-muted-foreground" title={new Date(r.createdAt).toLocaleString()}>
+                                                    {timeAgo(r.createdAt)}
+                                                </span>
+                                            </td>
+                                            {/* Status */}
+                                            <td className="px-4 py-3">
+                                                <select
+                                                    value={r.status}
+                                                    onChange={(e) => updateDemoStatus(r.id, e.target.value)}
+                                                    className={`text-[11px] font-semibold rounded-full px-2.5 py-1 border cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring transition-colors ${STATUS_COLORS[r.status]}`}
+                                                    style={{ background: "transparent" }}
+                                                >
+                                                    {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                                                        <option key={val} value={val}>
+                                                            {label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {r.grantedAt && (
+                                                    <div className="flex items-center gap-1 mt-1.5 text-[10px] text-emerald-600 font-semibold">
+                                                        <Check className="h-3 w-3" /> Granted {timeAgo(r.grantedAt)}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            {/* Actions */}
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    {!r.grantedAt && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-7 px-2.5 text-[11px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 shadow-none"
+                                                            onClick={() => setGrantDemoReq(r)}
+                                                            title="Grant demo project"
+                                                        >
+                                                            <Check className="h-3 w-3" /> Grant
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setDeleteDemoId(r.id)}
+                                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="Delete request"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                                 {filteredDemos.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                                        <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted-foreground">
                                             {demoRequests.length === 0 ? "No demo requests yet" : "No requests match your search"}
                                         </td>
                                     </tr>
@@ -771,6 +868,7 @@ export function AdminDashboard() {
                                     onChange={(v) => handleEditFormChange("fullName", v)}
                                     onClear={() => clearField("fullName")}
                                     placeholder="John Doe"
+                                    error={editErrors.fullName}
                                 />
                                 <EditField
                                     icon={Building2}
@@ -779,6 +877,7 @@ export function AdminDashboard() {
                                     onChange={(v) => handleEditFormChange("organization", v)}
                                     onClear={() => clearField("organization")}
                                     placeholder="Google LLC"
+                                    error={editErrors.organization}
                                 />
                                 <EditField
                                     icon={Briefcase}
@@ -787,6 +886,7 @@ export function AdminDashboard() {
                                     onChange={(v) => handleEditFormChange("jobTitle", v)}
                                     onClear={() => clearField("jobTitle")}
                                     placeholder="Software Engineer"
+                                    error={editErrors.jobTitle}
                                 />
                                 <EditField
                                     icon={MapPin}
@@ -795,6 +895,7 @@ export function AdminDashboard() {
                                     onChange={(v) => handleEditFormChange("location", v)}
                                     onClear={() => clearField("location")}
                                     placeholder="Osijek, Croatia"
+                                    error={editErrors.location}
                                 />
                                 <EditField
                                     icon={Globe}
@@ -803,6 +904,7 @@ export function AdminDashboard() {
                                     onChange={(v) => handleEditFormChange("website", v)}
                                     onClear={() => clearField("website")}
                                     placeholder="https://example.com"
+                                    error={editErrors.website}
                                 />
                                 <EditField
                                     icon={GraduationCap}
@@ -811,6 +913,7 @@ export function AdminDashboard() {
                                     onChange={(v) => handleEditFormChange("education", v)}
                                     onClear={() => clearField("education")}
                                     placeholder="MIT — CS"
+                                    error={editErrors.education}
                                 />
                             </div>
 
@@ -836,6 +939,11 @@ export function AdminDashboard() {
                                     )}
                                 </div>
                                 <p className="text-[10px] text-muted-foreground text-right">{editForm.bio.length}/300</p>
+                                {editErrors.bio && (
+                                    <p className="text-destructive text-xs font-medium" role="alert">
+                                        {editErrors.bio}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}
@@ -851,18 +959,151 @@ export function AdminDashboard() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Grant Demo Dialog */}
+            {grantDemoReq && (
+                <GrantDemoDialog
+                    open={!!grantDemoReq}
+                    onOpenChange={(v) => !v && setGrantDemoReq(null)}
+                    request={grantDemoReq}
+                    users={users}
+                    onConfirm={(userId) => {
+                        grantDemo(grantDemoReq.id, userId);
+                        useNotificationStore.getState().addNotification({
+                            userId,
+                            type: "demo_granted",
+                            message: "Your demo project is ready! Open it from your dashboard.",
+                            boardName: "",
+                            detail: DEMO_GRANT_DETAIL,
+                        });
+                        setGrantDemoReq(null);
+                    }}
+                />
+            )}
         </div>
     );
 }
 
+function GrantDemoDialog({ open, onOpenChange, request, users, onConfirm }) {
+    const [selectedUserId, setSelectedUserId] = useState("");
+
+    // Try to pre-select: prefer linked userId, then email match
+    useEffect(() => {
+        if (open && request) {
+            if (request.userId) {
+                const linked = users.find((u) => u.id === request.userId);
+                setSelectedUserId(linked ? linked.id : "");
+            } else {
+                const match = users.find((u) => u.email.toLowerCase() === request.email.toLowerCase());
+                setSelectedUserId(match ? match.id : "");
+            }
+        }
+    }, [open, request, users]);
+
+    if (!request) return null;
+
+    const linkedUser = request.userId ? users.find((u) => u.id === request.userId) : null;
+    const emailMatchUser = !request.userId ? users.find((u) => u.email.toLowerCase() === request.email.toLowerCase()) : null;
+    const hasRegisteredAccount = !!(linkedUser || emailMatchUser);
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Grant Demo Project</DialogTitle>
+                    <DialogDescription>Create a pre-populated demo board for this user. This action cannot be undone.</DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 py-3">
+                    <div className="bg-muted p-3 rounded-md text-sm">
+                        <p>
+                            <strong>Requester:</strong> {request.name}
+                        </p>
+                        <p>
+                            <strong>Email:</strong> {request.email}
+                        </p>
+                        <p>
+                            <strong>Company:</strong> {request.company || "N/A"}
+                        </p>
+                    </div>
+
+                    {!hasRegisteredAccount ? (
+                        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                            <p className="font-semibold mb-0.5">No registered account found</p>
+                            <p className="text-xs text-amber-700">
+                                This requester hasn't created an account yet. Ask them to register first, then return here to grant the demo.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Target user account</label>
+                            {linkedUser ? (
+                                <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+                                    <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                                    <div className="min-w-0">
+                                        <p className="font-medium text-emerald-800">{linkedUser.fullName || linkedUser.username}</p>
+                                        <p className="text-xs text-emerald-700">{linkedUser.email}</p>
+                                    </div>
+                                    <span className="ml-auto text-[10px] font-semibold text-emerald-600 bg-emerald-100 rounded-full px-2 py-0.5 shrink-0">
+                                        Linked account
+                                    </span>
+                                </div>
+                            ) : (
+                                <select
+                                    value={selectedUserId}
+                                    onChange={(e) => setSelectedUserId(e.target.value)}
+                                    className="w-full flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <option value="" disabled>
+                                        -- Select a registered user --
+                                    </option>
+                                    {users.map((u) => (
+                                        <option key={u.id} value={u.id}>
+                                            {u.fullName || u.username} ({u.email})
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                                {linkedUser
+                                    ? "This user submitted the request while logged in — their account is automatically linked."
+                                    : "A registered account was found by matching the request email."}
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        disabled={!hasRegisteredAccount || (!linkedUser && !selectedUserId)}
+                        onClick={() => onConfirm(linkedUser ? linkedUser.id : selectedUserId)}
+                        className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                        <Check className="w-4 h-4" /> Grant Demo
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 /** Inline editable field with clear button for admin user editing */
-function EditField({ icon: Icon, label, value, onChange, onClear, placeholder }) {
+function EditField({ icon: Icon, label, value, onChange, onClear, placeholder, error }) {
     return (
         <div className="space-y-1.5">
             <label className="block text-xs font-medium text-muted-foreground">{label}</label>
             <div className="relative">
                 <Icon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input value={value} onChange={(e) => onChange(e.target.value)} className="pl-8 pr-8 h-9 text-sm" placeholder={placeholder} />
+                <Input
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="pl-8 pr-8 h-9 text-sm"
+                    placeholder={placeholder}
+                    aria-invalid={!!error}
+                />
                 {value && (
                     <button
                         type="button"
@@ -874,6 +1115,11 @@ function EditField({ icon: Icon, label, value, onChange, onClear, placeholder })
                     </button>
                 )}
             </div>
+            {error && (
+                <p className="text-destructive text-xs font-medium" role="alert">
+                    {error}
+                </p>
+            )}
         </div>
     );
 }

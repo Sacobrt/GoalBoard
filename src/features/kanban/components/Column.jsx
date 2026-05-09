@@ -1,13 +1,45 @@
 import { useState } from "react";
-import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cn } from "../../../lib/utils";
 import { Input } from "../../../components/ui/input";
-import { MoreHorizontal, Archive, Plus, Trash2 } from "lucide-react";
+import { MoreHorizontal, Archive, Plus, Trash2, GripVertical } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../../../components/ui/dropdown-menu";
 
-export function Column({ column, taskCount, children, taskIds = [], userRole, onUpdateTitle, onAddTask, onArchiveColumn, onRemoveColumn }) {
-    const { isOver, setNodeRef } = useDroppable({ id: column.id });
+export function Column({
+    column,
+    taskCount,
+    children,
+    taskIds = [],
+    userRole,
+    isDragging = false,
+    isOverlay = false,
+    onUpdateTitle,
+    onAddTask,
+    onArchiveColumn,
+    onRemoveColumn,
+}) {
+    const {
+        isOver,
+        setNodeRef,
+        attributes,
+        listeners,
+        transform,
+        transition,
+        isDragging: isColDragging,
+    } = useSortable({
+        id: column.id,
+        data: { type: "Column", column },
+        disabled: userRole === "viewer" || isOverlay,
+    });
+
+    const style = isOverlay
+        ? { transform: "rotate(2deg) scale(1.02)", pointerEvents: "none", zIndex: 50, opacity: 1 }
+        : {
+              transform: CSS.Translate.toString(transform),
+              transition: transition || (isColDragging ? undefined : "opacity 0.15s, box-shadow 0.15s"),
+              opacity: isColDragging ? 0.4 : 1,
+          };
 
     const [editing, setEditing] = useState(false);
     const safeTitle = typeof column.title === "string" ? column.title : column.title?.title || "New Column";
@@ -20,28 +52,38 @@ export function Column({ column, taskCount, children, taskIds = [], userRole, on
         setEditing(false);
     }
 
-    const canEdit = userRole !== "viewer";
+    const canEditColumn = userRole === "owner";
+    const canAddTask = userRole !== "viewer";
 
     return (
-        <div className="flex flex-col min-h-0 bg-slate-100/50 rounded-xl p-3">
+        <div className="flex flex-col min-h-0 bg-slate-100/50 rounded-xl p-3" ref={isOverlay ? undefined : setNodeRef} style={style}>
             {/* Header */}
             <div className="flex items-center justify-between mb-3 px-1 group">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {!isOverlay && userRole !== "viewer" && (
+                        <div
+                            {...attributes}
+                            {...listeners}
+                            className="cursor-grab hover:bg-slate-200/60 rounded p-0.5 -ml-1 text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                            <GripVertical className="h-4 w-4" />
+                        </div>
+                    )}
                     <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: column.color }} />
                     {editing ? (
                         <Input
                             value={draftTitle}
                             onChange={(e) => setDraftTitle(e.target.value)}
                             autoFocus
-                            className="h-6 text-xs font-semibold uppercase tracking-widest px-1 py-0 w-full"
+                            className="h-6 text-xs font-semibold tracking-wide px-1 py-0 w-full"
                             onKeyDown={(e) => e.key === "Enter" && saveTitle()}
                             onBlur={saveTitle}
                         />
                     ) : (
                         <h2
-                            className={`text-xs font-semibold uppercase tracking-widest truncate text-muted-foreground ${canEdit ? "cursor-pointer hover:text-slate-900 transition-colors" : ""}`}
+                            className={`text-xs font-semibold tracking-wide truncate text-muted-foreground ${canEditColumn ? "cursor-pointer hover:text-slate-900 transition-colors" : ""}`}
                             onClick={() => {
-                                if (canEdit) {
+                                if (canEditColumn) {
                                     setDraftTitle(safeTitle);
                                     setEditing(true);
                                 }
@@ -55,9 +97,9 @@ export function Column({ column, taskCount, children, taskIds = [], userRole, on
                     <span className="text-xs rounded-full px-2 py-0.5 font-semibold tabular-nums" style={{ background: `${column.color}18`, color: column.color }}>
                         {taskCount}
                     </span>
-                    {canEdit && (
+                    {canEditColumn && (
                         <DropdownMenu>
-                            <DropdownMenuTrigger className="flex items-center justify-center w-5 h-5 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-200 text-muted-foreground">
+                            <DropdownMenuTrigger className="flex items-center justify-center w-5 h-5 rounded hover:bg-slate-200 text-muted-foreground">
                                 <MoreHorizontal className="h-3.5 w-3.5" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
@@ -79,17 +121,28 @@ export function Column({ column, taskCount, children, taskIds = [], userRole, on
 
             {/* Drop zone */}
             <div
-                ref={setNodeRef}
                 className={cn(
                     "flex-1 min-h-80 transition-all duration-150 rounded-lg flex flex-col gap-3 outline-none",
-                    isOver ? "bg-slate-200/50 ring-1 ring-slate-200" : "bg-transparent",
+                    isOver && isDragging ? "bg-primary/5 ring-dashed" : isOver ? "bg-slate-200/50 ring-1 ring-slate-200" : "bg-transparent",
                 )}
             >
                 <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
                     {children}
                 </SortableContext>
 
-                {userRole !== "viewer" && (
+                {/* Drop indicator — only visible during drag */}
+                {isDragging && taskIds.length === 0 && (
+                    <div
+                        className={cn(
+                            "flex flex-col items-center justify-center py-8 text-center rounded-lg border-2 border-dashed transition-all",
+                            isOver ? "border-primary/40 bg-primary/5 text-primary" : "border-slate-200 text-muted-foreground",
+                        )}
+                    >
+                        <p className="text-xs font-medium animate-pulse">Drop tasks here</p>
+                    </div>
+                )}
+
+                {canAddTask && (
                     <button
                         onClick={onAddTask}
                         className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-dashed border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-colors text-sm font-medium mt-auto"

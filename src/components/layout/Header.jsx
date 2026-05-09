@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart2, LogOut, Bell, Check, X, UserMinus, UserX, MailX, CheckCheck, Search, Menu, Settings } from "lucide-react";
+import { BarChart2, LogOut, Bell, Check, X, UserMinus, UserX, MailX, CheckCheck, Search, Menu, Settings, MessageSquare, Gift, ExternalLink } from "lucide-react";
 import { UserAvatar } from "../../shared/components/UserAvatar";
 import { useAuthStore } from "../../features/auth/store/authStore";
 import { useBoardStore } from "../../features/board/store/boardStore";
@@ -10,6 +11,7 @@ import { useMediaQuery } from "../../shared/hooks/useMediaQuery";
 import { timeAgo } from "../../shared/utils/timeAgo";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../ui/dropdown-menu";
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { Button } from "../ui/button";
 
 export function Header() {
@@ -26,6 +28,8 @@ export function Header() {
     const toggleCommandPalette = useCommandStore((s) => s.toggle);
     const isDesktop = useMediaQuery("(min-width: 768px)");
     const navigate = useNavigate();
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [expandedNotif, setExpandedNotif] = useState(null);
 
     const pendingInvitations = invitations.filter((i) => i.toEmail.toLowerCase() === (user?.email ?? "").toLowerCase() && i.status === "pending");
     const userNotifications = allNotifications.filter((n) => n.userId === user?.id);
@@ -59,7 +63,7 @@ export function Header() {
 
                 <div className="flex items-center gap-2">
                     {/* Notification bell */}
-                    <Popover>
+                    <Popover open={notifOpen} onOpenChange={setNotifOpen}>
                         <PopoverTrigger className="relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-muted">
                             <Bell className="h-4 w-4 text-muted-foreground" />
                             {totalBadge > 0 && (
@@ -107,6 +111,83 @@ export function Header() {
 
                                 {/* Notifications */}
                                 {userNotifications.map((notif) => {
+                                    if (notif.type === "demo_request") {
+                                        return (
+                                            <div
+                                                key={notif.id}
+                                                className="px-4 py-3 border-b border-border last:border-b-0"
+                                                style={{ background: notif.read ? "transparent" : "rgba(6,182,212,0.05)" }}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <MessageSquare className="h-4 w-4 mt-0.5 shrink-0 text-cyan-500" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm text-foreground">{notif.message}</p>
+                                                        <p className="text-xs mt-0.5 text-muted-foreground">{timeAgo(notif.createdAt)}</p>
+                                                    </div>
+                                                    {!notif.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-cyan-500 shrink-0" />}
+                                                </div>
+                                                <div className="mt-2 ml-7">
+                                                    <Button
+                                                        size="sm"
+                                                        className="h-7 text-xs bg-cyan-500 hover:bg-cyan-600 text-white"
+                                                        onClick={() => {
+                                                            markAsRead(notif.id);
+                                                            setNotifOpen(false);
+                                                            navigate("/admin?tab=demos");
+                                                        }}
+                                                    >
+                                                        <MessageSquare className="h-3 w-3" /> View request
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    if (notif.type === "demo_granted") {
+                                        return (
+                                            <div
+                                                key={notif.id}
+                                                className="px-4 py-3 border-b border-border last:border-b-0"
+                                                style={{ background: notif.read ? "transparent" : "rgba(16,185,129,0.05)" }}
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <Gift className="h-4 w-4 mt-0.5 shrink-0 text-emerald-500" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-foreground">{notif.message}</p>
+                                                        <p className="text-xs mt-0.5 text-muted-foreground">{timeAgo(notif.createdAt)}</p>
+                                                    </div>
+                                                    {!notif.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
+                                                </div>
+                                                <div className="mt-2 ml-7 flex items-center gap-2">
+                                                    {notif.detail && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="h-7 text-xs border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                                                            onClick={() => {
+                                                                markAsRead(notif.id);
+                                                                setExpandedNotif(notif);
+                                                            }}
+                                                        >
+                                                            <ExternalLink className="h-3 w-3" /> Details
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        size="sm"
+                                                        className="h-7 text-xs bg-emerald-500 hover:bg-emerald-600 text-white"
+                                                        onClick={() => {
+                                                            markAsRead(notif.id);
+                                                            setNotifOpen(false);
+                                                            navigate("/dashboard");
+                                                        }}
+                                                    >
+                                                        <Gift className="h-3 w-3" /> Open dashboard
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
                                     const icon =
                                         notif.type === "member_kicked"
                                             ? UserX
@@ -121,7 +202,10 @@ export function Header() {
                                             key={notif.id}
                                             className="flex items-start gap-3 px-4 py-3 border-b border-border last:border-b-0 cursor-pointer hover:bg-muted transition-colors"
                                             style={{ background: notif.read ? "transparent" : "rgba(99,102,241,0.04)" }}
-                                            onClick={() => !notif.read && markAsRead(notif.id)}
+                                            onClick={() => {
+                                                if (!notif.read) markAsRead(notif.id);
+                                                if (notif.detail) setExpandedNotif(notif);
+                                            }}
                                         >
                                             <Icon
                                                 className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground"
@@ -130,6 +214,7 @@ export function Header() {
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm text-foreground">{notif.message}</p>
                                                 <p className="text-xs mt-0.5 text-muted-foreground">{timeAgo(notif.createdAt)}</p>
+                                                {notif.detail && <p className="text-xs mt-1 text-primary font-medium">Click to expand</p>}
                                             </div>
                                             {!notif.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-primary shrink-0" />}
                                         </div>
@@ -144,6 +229,44 @@ export function Header() {
                             </div>
                         </PopoverContent>
                     </Popover>
+
+                    {/* Expandable notification detail dialog */}
+                    <Dialog open={!!expandedNotif} onOpenChange={(v) => !v && setExpandedNotif(null)}>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                    {expandedNotif?.type === "demo_granted" ? (
+                                        <>
+                                            <Gift className="h-4 w-4 text-emerald-500" /> Demo Project Ready!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Bell className="h-4 w-4" /> Notification
+                                        </>
+                                    )}
+                                </DialogTitle>
+                                <DialogDescription className="text-xs text-muted-foreground">{expandedNotif && timeAgo(expandedNotif.createdAt)}</DialogDescription>
+                            </DialogHeader>
+                            <div className="rounded-lg bg-muted/50 border border-border px-4 py-3 text-sm text-foreground whitespace-pre-wrap leading-relaxed font-mono">
+                                {expandedNotif?.detail}
+                            </div>
+                            {expandedNotif?.type === "demo_granted" && (
+                                <div className="flex justify-end pt-1">
+                                    <Button
+                                        size="sm"
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                                        onClick={() => {
+                                            setExpandedNotif(null);
+                                            setNotifOpen(false);
+                                            navigate("/dashboard");
+                                        }}
+                                    >
+                                        <Gift className="h-3.5 w-3.5" /> Go to dashboard
+                                    </Button>
+                                </div>
+                            )}
+                        </DialogContent>
+                    </Dialog>
 
                     {/* User menu */}
                     <DropdownMenu>

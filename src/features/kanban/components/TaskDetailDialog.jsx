@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CalendarIcon, X, User, Pencil, Archive, Clock, CheckCircle2 } from "lucide-react";
+import { CalendarIcon, X, User, Pencil, Archive, Clock, CheckCircle2, Euro, ChevronDown, ChevronUp } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { Button } from "../../../components/ui/button";
@@ -17,8 +17,21 @@ import {
     AlertDialogCancel,
     AlertDialogAction,
 } from "../../../components/ui/alert-dialog";
+import { taskSchema } from "../domain/schemas/taskSchema";
 
-export function TaskDetailDialog({ task, open, onClose, onSave, onArchive, columns = [], priorities = [], members = [], userRole, initialEditing = false }) {
+export function TaskDetailDialog({
+    task,
+    open,
+    onClose,
+    onSave,
+    onArchive,
+    columns = [],
+    priorities = [],
+    members = [],
+    userRole,
+    initialEditing = false,
+    hasBudget = false,
+}) {
     const [editing, setEditing] = useState(initialEditing);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -28,6 +41,9 @@ export function TaskDetailDialog({ task, open, onClose, onSave, onArchive, colum
     const [dueDate, setDueDate] = useState(null);
     const [calendarOpen, setCalendarOpen] = useState(false);
     const [archiveOpen, setArchiveOpen] = useState(false);
+    const [cost, setCost] = useState("");
+    const [descExpanded, setDescExpanded] = useState(false);
+    const [validationErrors, setValidationErrors] = useState({});
 
     const isViewer = userRole === "viewer";
 
@@ -39,6 +55,7 @@ export function TaskDetailDialog({ task, open, onClose, onSave, onArchive, colum
             setColumnId(task.columnId);
             setAssigneeIds(task.assigneeIds ?? (task.assigneeId ? [task.assigneeId] : []));
             setDueDate(task.dueDate ? parseISO(task.dueDate) : null);
+            setCost(task.cost ?? "");
             setEditing(initialEditing);
         }
     }, [task, initialEditing]);
@@ -64,19 +81,39 @@ export function TaskDetailDialog({ task, open, onClose, onSave, onArchive, colum
     }
 
     function handleSave() {
-        if (!title.trim()) return;
+        const result = taskSchema.safeParse({
+            title,
+            description,
+            priorityIds,
+            assigneeIds,
+            dueDate,
+            cost: String(cost),
+        });
+
+        if (!result.success) {
+            const fieldErrors = {};
+            for (const issue of result.error.issues) {
+                const field = issue.path[0];
+                if (!fieldErrors[field]) fieldErrors[field] = issue.message;
+            }
+            setValidationErrors(fieldErrors);
+            return;
+        }
+
+        setValidationErrors({});
 
         const targetColumn = columns.find((c) => c.id === columnId);
         const wasDone = !!task.completedAt;
         const nowDone = targetColumn?.isDone ?? false;
 
         onSave(task.id, {
-            title: title.trim(),
-            description: description.trim(),
+            title: result.data.title,
+            description: result.data.description ?? "",
             priorityIds,
             columnId,
             assigneeIds,
             dueDate: dueDate ? format(dueDate, "yyyy-MM-dd'T'HH:mm") : null,
+            cost: result.data.cost ? parseFloat(result.data.cost) : 0,
             completedAt: nowDone && !wasDone ? new Date().toISOString() : !nowDone && wasDone ? null : task.completedAt,
         });
         setEditing(false);
@@ -89,23 +126,45 @@ export function TaskDetailDialog({ task, open, onClose, onSave, onArchive, colum
         setColumnId(task.columnId);
         setAssigneeIds(task.assigneeIds ?? (task.assigneeId ? [task.assigneeId] : []));
         setDueDate(task.dueDate ? parseISO(task.dueDate) : null);
+        setCost(task.cost ?? "");
         setEditing(false);
+        setValidationErrors({});
     }
 
     return (
         <>
             <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-                <DialogContent showCloseButton={false} aria-describedby={undefined} className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
+                <DialogContent
+                    id="task-dialog-content"
+                    showCloseButton={false}
+                    aria-describedby={undefined}
+                    className="sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90dvh] overflow-y-auto"
+                >
                     <DialogHeader>
                         <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                                 <DialogTitle className={editing ? "sr-only" : "text-lg font-bold text-slate-900 leading-snug"}>{task.title}</DialogTitle>
-                                {editing && <Input value={title} onChange={(e) => setTitle(e.target.value)} className="text-lg font-bold" autoFocus />}
+                                {editing && (
+                                    <Input
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        className="text-lg font-bold"
+                                        autoFocus
+                                        aria-invalid={!!validationErrors.title}
+                                    />
+                                )}
+                                {editing && validationErrors.title && (
+                                    <p className="text-destructive text-xs font-medium mt-1" role="alert">
+                                        {validationErrors.title}
+                                    </p>
+                                )}
                             </div>
                             {!isViewer && !editing && (
-                                <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="shrink-0">
-                                    <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
-                                </Button>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                                        <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit
+                                    </Button>
+                                </div>
                             )}
                         </div>
                     </DialogHeader>
@@ -295,14 +354,66 @@ export function TaskDetailDialog({ task, open, onClose, onSave, onArchive, colum
                             )}
                         </div>
 
+                        {/* Cost */}
+                        {hasBudget && (
+                            <div>
+                                <span className="text-xs font-medium text-slate-500 mb-1.5 block">Cost (€)</span>
+                                {editing ? (
+                                    <div>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={cost}
+                                            onChange={(e) => setCost(e.target.value)}
+                                            placeholder="0.00"
+                                            className="max-w-40"
+                                            aria-invalid={!!validationErrors.cost}
+                                        />
+                                        {validationErrors.cost && (
+                                            <p className="text-destructive text-xs font-medium mt-1" role="alert">
+                                                {validationErrors.cost}
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : task.cost > 0 ? (
+                                    <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 bg-emerald-50 rounded-md px-2 py-1">
+                                        <Euro className="h-3.5 w-3.5" />
+                                        {task.cost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                                    </span>
+                                ) : (
+                                    <span className="text-sm text-slate-400">No cost assigned</span>
+                                )}
+                            </div>
+                        )}
+
                         {/* Description */}
                         <div>
                             <span className="text-xs font-medium text-slate-500 mb-2 block">Description</span>
                             {editing ? (
-                                <MarkdownEditor value={description} onChange={setDescription} placeholder="Add a detailed description using Markdown..." />
+                                <div>
+                                    <MarkdownEditor value={description} onChange={setDescription} placeholder="Add a detailed description using Markdown..." />
+                                    {validationErrors.description && (
+                                        <p className="text-destructive text-xs font-medium mt-1" role="alert">
+                                            {validationErrors.description}
+                                        </p>
+                                    )}
+                                </div>
                             ) : description ? (
-                                <div className="rounded-lg border h-48 overflow-y-auto border-slate-100 bg-slate-50/50 p-4">
-                                    <MarkdownPreview content={description} />
+                                <div>
+                                    <div
+                                        className={`rounded-lg border ${descExpanded ? "" : "h-48"} overflow-y-auto border-slate-100 bg-slate-50/50 p-4 transition-all`}
+                                    >
+                                        <MarkdownPreview content={description} />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDescExpanded((v) => !v)}
+                                        className="mt-1.5 flex items-center gap-1 text-xs text-primary hover:underline"
+                                    >
+                                        {descExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                                        {descExpanded ? "Show less" : "Show more"}
+                                    </button>
                                 </div>
                             ) : (
                                 <p className="text-sm text-slate-400 italic">No description provided.</p>

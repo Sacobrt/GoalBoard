@@ -1,5 +1,5 @@
-import { useState, useMemo, lazy, Suspense } from "react";
-import { CheckCircle2, ListTodo, TrendingUp, AlertTriangle, CalendarClock, Plus, KanbanSquare, Check, X, Users, Search } from "lucide-react";
+import { useState, useMemo } from "react";
+import { CheckCircle2, ListTodo, TrendingUp, CalendarClock, Plus, KanbanSquare, Check, X, Users, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area } from "recharts";
 import { useAuthStore } from "../../auth/store/authStore";
 import { useBoardStore } from "../../board/store/boardStore";
@@ -20,6 +20,7 @@ import {
     AlertDialogAction,
 } from "../../../components/ui/alert-dialog";
 import { ViewSwitcher } from "../../../shared/components/ViewSwitcher";
+import { OverdueTasksBanner } from "../components/OverdueTasks";
 import { useBoardView } from "../../../shared/hooks/useBoardView";
 import { GridView } from "../../../shared/components/board-views/GridView";
 import { ListView } from "../../../shared/components/board-views/ListView";
@@ -27,9 +28,7 @@ import { TableView } from "../../../shared/components/board-views/TableView";
 import { FavoritesView } from "../../../shared/components/board-views/FavoritesView";
 import { RecentView } from "../../../shared/components/board-views/RecentView";
 import { TimelineView } from "../../../shared/components/board-views/TimelineView";
-
-// Heavy views are lazy-loaded to keep initial bundle lean
-const KanbanView = lazy(() => import("../../../shared/components/board-views/KanbanView").then((m) => ({ default: m.KanbanView })));
+import { useCommandStore } from "../../../shared/hooks/useCommandStore";
 
 function greeting() {
     const h = new Date().getHours();
@@ -43,21 +42,17 @@ export function DashboardPage() {
     const allBoards = useBoardStore((s) => s.boards);
     const allInvitations = useBoardStore((s) => s.invitations);
     const pinnedBoards = useBoardStore((s) => s.pinnedBoards);
-    const boardStages = useBoardStore((s) => s.boardStages);
     const respondToInvitation = useBoardStore((s) => s.respondToInvitation);
-    const createBoard = useBoardStore((s) => s.createBoard);
     const deleteBoard = useBoardStore((s) => s.deleteBoard);
     const togglePin = useBoardStore((s) => s.togglePin);
-    const setBoardStage = useBoardStore((s) => s.setBoardStage);
     const allTasks = useKanbanStore((s) => s.tasks);
+    const openCreateBoard = useCommandStore((s) => s.openCreateBoard);
 
     const boards = allBoards.filter((b) => b.members.some((m) => m.userId === user?.id));
     const pendingInvitations = allInvitations.filter((i) => i.toEmail.toLowerCase() === (user?.email ?? "").toLowerCase() && i.status === "pending");
 
     const pinnedBoardIds = useMemo(() => new Set(pinnedBoards), [pinnedBoards]);
 
-    const [showNewBoard, setShowNewBoard] = useState(false);
-    const [newBoardName, setNewBoardName] = useState("");
     const [deleteBoardId, setDeleteBoardId] = useState(null);
     const [boardSearch, setBoardSearch] = useState("");
     const { view: boardView, setView: setBoardView } = useBoardView();
@@ -88,14 +83,6 @@ export function DashboardPage() {
 
         return { total, done, active, rate, overdue, dueToday, recentlyDone };
     }, [boards, allTasks, today]);
-
-    function handleCreateBoard(e) {
-        e.preventDefault();
-        if (!newBoardName.trim()) return;
-        createBoard(newBoardName.trim(), user.id);
-        setNewBoardName("");
-        setShowNewBoard(false);
-    }
 
     // Chart data: tasks per board (active vs done)
     const boardChartData = useMemo(
@@ -196,14 +183,9 @@ export function DashboardPage() {
             {/* Alerts */}
             {(stats.overdue > 0 || stats.dueToday > 0) && (
                 <div className="flex flex-wrap gap-3">
-                    {stats.overdue > 0 && (
-                        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-600">
-                            <AlertTriangle className="h-4 w-4" />
-                            <span>
-                                <strong>{stats.overdue}</strong> overdue {stats.overdue === 1 ? "task" : "tasks"}
-                            </span>
-                        </div>
-                    )}
+                    {/* Overdue tasks — interactive banner with detail sheet */}
+                    {stats.overdue > 0 && <OverdueTasksBanner />}
+
                     {stats.dueToday > 0 && (
                         <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-600">
                             <CalendarClock className="h-4 w-4" />
@@ -257,26 +239,11 @@ export function DashboardPage() {
 
                     <div className="ml-auto flex items-center gap-2 shrink-0">
                         {boards.length > 0 && <ViewSwitcher view={boardView} onViewChange={setBoardView} />}
-                        {!showNewBoard && (
-                            <Button size="sm" variant="outline" onClick={() => setShowNewBoard(true)}>
-                                <Plus className="h-4 w-4" /> New Board
-                            </Button>
-                        )}
+                        <Button size="sm" variant="outline" onClick={openCreateBoard}>
+                            <Plus className="h-4 w-4" /> New Board
+                        </Button>
                     </div>
                 </div>
-
-                {/* Inline new-board form */}
-                {showNewBoard && (
-                    <form onSubmit={handleCreateBoard} className="flex items-center gap-2 mb-4">
-                        <Input value={newBoardName} onChange={(e) => setNewBoardName(e.target.value)} placeholder="Board name..." autoFocus className="max-w-xs" />
-                        <Button size="sm" type="submit">
-                            Create
-                        </Button>
-                        <Button size="sm" variant="ghost" type="button" onClick={() => setShowNewBoard(false)}>
-                            <X className="h-3.5 w-3.5" />
-                        </Button>
-                    </form>
-                )}
 
                 {/* Empty states */}
                 {boards.length === 0 ? (
@@ -285,7 +252,7 @@ export function DashboardPage() {
                         title="Create your first board"
                         description="Boards are flexible workspaces with custom columns and priorities."
                         action={
-                            <Button onClick={() => setShowNewBoard(true)}>
+                            <Button onClick={openCreateBoard}>
                                 <Plus className="h-4 w-4" /> New Board
                             </Button>
                         }
@@ -308,8 +275,6 @@ export function DashboardPage() {
                         pinnedBoardIds={pinnedBoardIds}
                         onTogglePin={togglePin}
                         onDelete={(id) => setDeleteBoardId(id)}
-                        boardStages={boardStages}
-                        onStageChange={setBoardStage}
                     />
                 )}
             </div>
@@ -459,7 +424,7 @@ export function DashboardPage() {
 
 const SHARED_PROPS = ["boards", "allTasks", "user", "pinnedBoardIds", "onTogglePin", "onDelete"];
 
-function ActiveBoardView({ view, onViewChange, boards, allTasks, user, pinnedBoardIds, onTogglePin, onDelete, boardStages, onStageChange }) {
+function ActiveBoardView({ view, onViewChange, boards, allTasks, user, pinnedBoardIds, onTogglePin, onDelete }) {
     const shared = { boards, allTasks, user, pinnedBoardIds, onTogglePin, onDelete };
 
     switch (view) {
@@ -469,12 +434,6 @@ function ActiveBoardView({ view, onViewChange, boards, allTasks, user, pinnedBoa
             return <ListView {...shared} />;
         case "table":
             return <TableView {...shared} />;
-        case "kanban":
-            return (
-                <Suspense fallback={<div className="py-8 text-center text-sm text-muted-foreground">Loading Kanban view...</div>}>
-                    <KanbanView {...shared} boardStages={boardStages} onStageChange={onStageChange} />
-                </Suspense>
-            );
         case "favorites":
             return <FavoritesView {...shared} onSwitchView={onViewChange} />;
         case "recent":

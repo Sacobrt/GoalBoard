@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -6,12 +6,13 @@ import { Markdown } from "tiptap-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
-import { Bold, Italic, List, ListOrdered, Code, Heading2, Quote } from "lucide-react";
+import { Bold, Italic, List, ListOrdered, Code, Heading2, Quote, Maximize2, Minimize2 } from "lucide-react";
 
 export const proseClasses =
     "prose prose-sm prose-slate max-w-none text-sm [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5 [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_pre]:bg-slate-100 [&_pre]:p-3 [&_pre]:rounded-lg [&_a]:text-indigo-500 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:border-slate-200 [&_blockquote]:pl-3 [&_blockquote]:text-slate-500";
 
 export function MarkdownEditor({ value, onChange, placeholder = "Write a description..." }) {
+    const [expanded, setExpanded] = useState(false);
     const editor = useEditor({
         extensions: [StarterKit, Placeholder.configure({ placeholder }), Markdown.configure({ html: false, transformPastedText: true })],
         content: value || "",
@@ -67,12 +68,20 @@ export function MarkdownEditor({ value, onChange, placeholder = "Write a descrip
                         <btn.icon className="h-3.5 w-3.5" />
                     </button>
                 ))}
+                <button
+                    type="button"
+                    title={expanded ? "Collapse editor" : "Expand editor"}
+                    onClick={() => setExpanded((v) => !v)}
+                    className="p-1.5 rounded transition-colors text-slate-500 hover:bg-slate-200 hover:text-slate-700 ml-auto"
+                >
+                    {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                </button>
             </div>
 
             {/* WYSIWYG editor */}
             <EditorContent
                 editor={editor}
-                className={`bg-white h-32 overflow-y-auto px-3 py-2 text-sm ${proseClasses} [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-25`}
+                className={`bg-white ${expanded ? "h-full" : "h-64"} overflow-y-auto px-3 py-2 text-sm transition-all ${proseClasses} [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-25`}
             />
         </div>
     );
@@ -82,7 +91,17 @@ export function MarkdownPreview({ content }) {
     if (!content) return null;
     return (
         <div className={proseClasses}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+            <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeSanitize]}
+                components={{
+                    a: ({ href, children }) => (
+                        <a href={href} target="_blank" rel="noopener noreferrer">
+                            {children}
+                        </a>
+                    ),
+                }}
+            >
                 {content}
             </ReactMarkdown>
         </div>

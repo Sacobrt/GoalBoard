@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, User, Building2, MessageSquare, CheckCircle2, ArrowRight, Send, KanbanSquare, BarChart3, Users } from "lucide-react";
 import { useAuthStore } from "../../auth/store/authStore";
@@ -7,6 +9,8 @@ import { useDemoRequestStore } from "../../admin/store/demoRequestStore";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Textarea } from "../../../components/ui/textarea";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "../../../components/ui/form";
+import { requestDemoSchema } from "../schemas/requestDemoSchema";
 
 const features = [
     { icon: KanbanSquare, title: "Unlimited boards & tasks", desc: "Organize every project with drag-and-drop Kanban boards." },
@@ -22,37 +26,30 @@ export function RequestDemoPage() {
     const addRequest = useDemoRequestStore((s) => s.addRequest);
     const addNotification = useNotificationStore((s) => s.addNotification);
 
-    const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
+    const form = useForm({
+        resolver: zodResolver(requestDemoSchema),
+        defaultValues: {
+            name: user ? user.fullName || user.username || "" : "",
+            email: user ? user.email || "" : "",
+            company: user ? user.organization || "" : "",
+            message: "",
+        },
+        mode: "onTouched",
+    });
+
     const [submitted, setSubmitted] = useState(false);
-    const [nameError, setNameError] = useState("");
 
-    if (user) {
-        navigate("/dashboard", { replace: true });
-        return null;
-    }
+    function onSubmit(data) {
+        addRequest({ ...data, name: data.name, userId: user?.id ?? null });
 
-    function set(field, value) {
-        setForm((f) => ({ ...f, [field]: value }));
-    }
-
-    function handleSubmit(e) {
-        e.preventDefault();
-        if (!form.name.trim()) {
-            setNameError("Full name is required.");
-            return;
-        }
-        setNameError("");
-
-        addRequest({ ...form, name: form.name.trim() });
-
-        // Notify all admin users
+        // Notify all admin users (except the requester themselves)
         const allUsers = JSON.parse(localStorage.getItem("goalboard_users") ?? "[]");
-        const admins = allUsers.filter((u) => u.role === "admin" || !u.role);
+        const admins = allUsers.filter((u) => (u.role === "admin" || !u.role) && u.id !== user?.id);
         for (const admin of admins) {
             addNotification({
                 userId: admin.id,
                 type: "demo_request",
-                message: `New demo request from ${form.name} (${form.email})${form.company ? ` at ${form.company}` : ""}`,
+                message: `New demo request from ${data.name} (${data.email})${data.company ? ` at ${data.company}` : ""}`,
                 boardName: "",
             });
         }
@@ -70,9 +67,15 @@ export function RequestDemoPage() {
                         <span className="font-bold text-base tracking-tight">Goal Board</span>
                     </Link>
                     <div className="flex items-center gap-4">
-                        <Link to="/register" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                            Or get started free →
-                        </Link>
+                        {user ? (
+                            <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                                ← Back to dashboard
+                            </Link>
+                        ) : (
+                            <Link to="/register" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                                Or get started free →
+                            </Link>
+                        )}
                     </div>
                 </div>
             </header>
@@ -127,10 +130,11 @@ export function RequestDemoPage() {
                                     </div>
                                     <h2 className="text-xl font-bold text-slate-900">Request received!</h2>
                                     <p className="text-sm text-slate-500 max-w-xs">
-                                        We'll reach out within 24 hours to schedule your personalized demo. In the meantime, you can get started for free.
+                                        We'll reach out within 24 hours to schedule your personalized demo.{" "}
+                                        {user ? "In the meantime, you can keep using Goal Board." : "In the meantime, you can get started for free."}
                                     </p>
-                                    <Button className="mt-4" onClick={() => navigate(`/register`)}>
-                                        Get started free <ArrowRight className="size-4" />
+                                    <Button className="mt-4" onClick={() => navigate(user ? "/dashboard" : "/register")}>
+                                        {user ? "Back to dashboard" : "Get started free"} <ArrowRight className="size-4" />
                                     </Button>
                                 </div>
                             ) : (
@@ -140,78 +144,113 @@ export function RequestDemoPage() {
                                         <p className="text-sm text-slate-500 mt-1">We'll get back to you within 24 hours</p>
                                     </div>
 
-                                    <form onSubmit={handleSubmit} className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-medium mb-1.5 text-slate-600">Full name</label>
-                                            <div className="relative">
-                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                                                <Input
-                                                    value={form.name}
-                                                    onChange={(e) => {
-                                                        set("name", stripEmoji(e.target.value));
-                                                        if (nameError) setNameError("");
-                                                    }}
-                                                    placeholder="Jane Smith"
-                                                    className={`pl-9${nameError ? " border-red-400 focus-visible:ring-red-400" : ""}`}
-                                                    autoFocus
-                                                />
-                                                {nameError && <p className="mt-1 text-xs text-red-500">{nameError}</p>}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-medium mb-1.5 text-slate-600">Work email</label>
-                                            <div className="relative">
-                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                                <Input
-                                                    type="email"
-                                                    value={form.email}
-                                                    onChange={(e) => set("email", e.target.value)}
-                                                    placeholder="jane@company.com"
-                                                    className="pl-9"
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-medium mb-1.5 text-slate-600">Company</label>
-                                            <div className="relative">
-                                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                                <Input
-                                                    value={form.company}
-                                                    onChange={(e) => set("company", e.target.value)}
-                                                    placeholder="Google LLC"
-                                                    className="pl-9"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-medium mb-1.5 text-slate-600">
-                                                What are you looking to solve? <span className="text-slate-400">(optional)</span>
-                                            </label>
-                                            <Textarea
-                                                value={form.message}
-                                                onChange={(e) => set("message", e.target.value)}
-                                                placeholder="Tell us about your team and workflow..."
-                                                rows={3}
+                                    <Form {...form}>
+                                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                                            <FormField
+                                                control={form.control}
+                                                name="name"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs text-slate-600">Full name</FormLabel>
+                                                        <FormControl>
+                                                            <div className="relative">
+                                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                                                <Input
+                                                                    {...field}
+                                                                    onChange={(e) => field.onChange(stripEmoji(e.target.value))}
+                                                                    placeholder="Jane Smith"
+                                                                    className="pl-9"
+                                                                    autoFocus
+                                                                    aria-invalid={!!form.formState.errors.name}
+                                                                />
+                                                            </div>
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
                                             />
-                                        </div>
 
-                                        <Button type="submit" className="w-full mt-2 h-11 text-sm">
-                                            <span className="flex items-center gap-2">
-                                                <Send className="h-4 w-4" /> Request a demo
-                                            </span>
-                                        </Button>
-                                    </form>
+                                            <FormField
+                                                control={form.control}
+                                                name="email"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs text-slate-600">Work email</FormLabel>
+                                                        <FormControl>
+                                                            <div className="relative">
+                                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                                <Input
+                                                                    {...field}
+                                                                    type="email"
+                                                                    placeholder="jane@company.com"
+                                                                    className={`pl-9${user ? " bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
+                                                                    readOnly={!!user}
+                                                                    disabled={!!user}
+                                                                    aria-invalid={!!form.formState.errors.email}
+                                                                />
+                                                                {user && <p className="mt-1 text-xs text-slate-400">Locked to your account email.</p>}
+                                                            </div>
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="company"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs text-slate-600">Company</FormLabel>
+                                                        <FormControl>
+                                                            <div className="relative">
+                                                                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                                <Input {...field} placeholder="Google LLC" className="pl-9" />
+                                                            </div>
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="message"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel className="text-xs text-slate-600">
+                                                            What are you looking to solve? <span className="text-slate-400 font-normal">(optional)</span>
+                                                        </FormLabel>
+                                                        <FormControl>
+                                                            <Textarea {...field} placeholder="Tell us about your team and workflow..." rows={3} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            <Button type="submit" className="w-full mt-2 h-11 text-sm">
+                                                <span className="flex items-center gap-2">
+                                                    <Send className="h-4 w-4" /> Request a demo
+                                                </span>
+                                            </Button>
+                                        </form>
+                                    </Form>
 
                                     <p className="mt-5 text-center text-xs text-slate-400">
-                                        Or{" "}
-                                        <Link to="/register" className="font-medium text-indigo-500 hover:underline">
-                                            get started free
-                                        </Link>{" "}
-                                        — no demo needed.
+                                        {user ? (
+                                            <>
+                                                Logged in as <span className="font-medium text-slate-500">{user.email}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                Or{" "}
+                                                <Link to="/register" className="font-medium text-indigo-500 hover:underline">
+                                                    get started free
+                                                </Link>{" "}
+                                                — no demo needed.
+                                            </>
+                                        )}
                                     </p>
                                 </>
                             )}

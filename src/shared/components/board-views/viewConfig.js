@@ -1,4 +1,4 @@
-import { LayoutGrid, List, Table2, KanbanSquare, Star, Clock, CalendarDays } from "lucide-react";
+import { LayoutGrid, List, Table2, Star, Clock, CalendarDays } from "lucide-react";
 
 export const VIEWS = [
     {
@@ -21,13 +21,6 @@ export const VIEWS = [
         icon: Table2,
         primary: true,
         description: "Sortable data table",
-    },
-    {
-        id: "kanban",
-        label: "Kanban",
-        icon: KanbanSquare,
-        primary: false,
-        description: "Boards grouped by status",
     },
     {
         id: "favorites",

@@ -15,6 +15,8 @@ export function CommandPalette() {
     const open = useCommandStore((s) => s.isOpen);
     const setOpen = useCommandStore((s) => s.setIsOpen);
     const toggleCommandPalette = useCommandStore((s) => s.toggle);
+    const pendingMode = useCommandStore((s) => s.pendingMode);
+    const clearPendingMode = useCommandStore((s) => s.clearPendingMode);
     const [query, setQuery] = useState("");
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [mode, setMode] = useState("search"); // "search" | "create-board"
@@ -48,9 +50,15 @@ export function CommandPalette() {
         if (open) {
             setQuery("");
             setSelectedIndex(0);
-            setMode("search");
+            const initialMode = pendingMode ?? "search";
+            setMode(initialMode);
             setNewBoardName("");
-            setTimeout(() => inputRef.current?.focus(), 50);
+            clearPendingMode();
+            if (initialMode === "create-board") {
+                setTimeout(() => newBoardInputRef.current?.focus(), 50);
+            } else {
+                setTimeout(() => inputRef.current?.focus(), 50);
+            }
         }
     }, [open]);
 
@@ -286,7 +294,9 @@ export function CommandPalette() {
                             <div ref={listRef} className="max-h-72 overflow-y-auto py-1.5">
                                 {filtered.length === 0 ? (
                                     <div className="px-4 py-8 text-center">
-                                        <p className="text-sm text-muted-foreground">{query ? `No results for "${query}"` : "No commands available"}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {query ? `No results for "${query.slice(0, 48)}..."` : "No commands available"}
+                                        </p>
                                     </div>
                                 ) : (
                                     Object.entries(grouped).map(([group, items]) => (

@@ -1,13 +1,13 @@
-import { NavLink, useNavigate, useParams } from "react-router-dom";
+import { NavLink, useParams } from "react-router-dom";
 import { useState } from "react";
-import { BarChart2, KanbanSquare, Plus, ChevronLeft, ChevronRight, X, Check, Shield, Home, Search } from "lucide-react";
+import { BarChart2, KanbanSquare, Plus, ChevronLeft, ChevronRight, X, Shield, Home, Search } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuthStore } from "../../features/auth/store/authStore";
 import { useBoardStore } from "../../features/board/store/boardStore";
 import { useSidebarStore } from "../../shared/hooks/useSidebarStore";
+import { useCommandStore } from "../../shared/hooks/useCommandStore";
 import { can } from "../../shared/auth/permissions";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
 
 const sidebarLinkClass = (isActive, collapsed) =>
     cn(
@@ -21,28 +21,16 @@ export function Sidebar() {
     const toggle = useSidebarStore((s) => s.toggle);
     const user = useAuthStore((s) => s.user);
     const allBoards = useBoardStore((s) => s.boards);
-    const createBoard = useBoardStore((s) => s.createBoard);
+    const openCreateBoard = useCommandStore((s) => s.openCreateBoard);
     const { boardId } = useParams();
-    const navigate = useNavigate();
 
     const boards = allBoards
         .filter((b) => b.members.some((m) => m.userId === user?.id))
         .sort((a, b) => new Date(b.updatedAt ?? b.createdAt) - new Date(a.updatedAt ?? a.createdAt));
 
-    const [showNewBoard, setShowNewBoard] = useState(false);
-    const [newBoardName, setNewBoardName] = useState("");
     const [boardSearch, setBoardSearch] = useState("");
 
     const filteredSidebarBoards = collapsed || !boardSearch ? boards : boards.filter((b) => b.name.toLowerCase().includes(boardSearch.toLowerCase()));
-
-    function handleCreateBoard(e) {
-        e.preventDefault();
-        if (!newBoardName.trim()) return;
-        const board = createBoard(newBoardName.trim(), user.id);
-        setNewBoardName("");
-        setShowNewBoard(false);
-        navigate(`/board/${board.id}`);
-    }
 
     return (
         <aside className={cn("flex flex-col h-full border-r border-border transition-all duration-200 ease-in-out shrink-0 bg-card", collapsed ? "w-13" : "w-65")}>
@@ -91,7 +79,7 @@ export function Sidebar() {
                         <div className="flex items-center justify-between pt-5 pb-1.5 px-1">
                             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Boards</span>
                             <button
-                                onClick={() => setShowNewBoard(true)}
+                                onClick={openCreateBoard}
                                 className="flex items-center justify-center w-5 h-5 rounded transition-colors hover:bg-muted"
                                 title="New board"
                             >
@@ -142,39 +130,11 @@ export function Sidebar() {
                     )}
                 </div>
 
-                {/* Inline new board */}
-                {showNewBoard && !collapsed && (
-                    <form onSubmit={handleCreateBoard} className="flex items-center gap-1.5 px-1 pt-1">
-                        <Input
-                            value={newBoardName}
-                            onChange={(e) => setNewBoardName(e.target.value)}
-                            placeholder="Board name..."
-                            autoFocus
-                            className="h-8 text-xs flex-1"
-                        />
-                        <Button size="sm" type="submit" className="h-7 w-7 p-0">
-                            <Check className="h-3 w-3" />
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            type="button"
-                            onClick={() => {
-                                setShowNewBoard(false);
-                                setNewBoardName("");
-                            }}
-                            className="h-7 w-7 p-0"
-                        >
-                            <X className="h-3 w-3" />
-                        </Button>
-                    </form>
-                )}
-
                 {/* Empty boards state */}
                 {boards.length === 0 && !collapsed && (
                     <div className="px-3 py-4 text-center">
                         <p className="text-xs text-muted-foreground">No boards yet</p>
-                        <button onClick={() => setShowNewBoard(true)} className="text-xs font-medium mt-1 transition-colors text-primary">
+                        <button onClick={openCreateBoard} className="text-xs font-medium mt-1 transition-colors text-primary">
                             Create one
                         </button>
                     </div>
@@ -185,7 +145,7 @@ export function Sidebar() {
             <div className={cn("border-t border-border py-2 px-2 shrink-0", collapsed && "flex justify-center")}>
                 {!collapsed ? (
                     <button
-                        onClick={() => setShowNewBoard(true)}
+                        onClick={openCreateBoard}
                         className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted text-primary"
                     >
                         <Plus className="h-4 w-4" />
@@ -193,10 +153,7 @@ export function Sidebar() {
                     </button>
                 ) : (
                     <button
-                        onClick={() => {
-                            useSidebarStore.getState().setCollapsed(false);
-                            setTimeout(() => setShowNewBoard(true), 220);
-                        }}
+                        onClick={openCreateBoard}
                         className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors hover:bg-muted"
                         title="New board"
                     >

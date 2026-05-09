@@ -4,15 +4,11 @@ import { useKanbanStore } from "../../kanban/store/kanbanStore";
 const uuid = () => crypto.randomUUID();
 
 export function seedDemoProject(userId) {
-    const boardStore = useBoardStore.getState();
-    const kanbanStore = useKanbanStore.getState();
-
     const now = new Date().toISOString();
     const boardId = uuid();
 
-    const colBacklogId = uuid();
-    const colTodoId = uuid();
-    const colProgressId = uuid();
+    const colPlanningId = uuid();
+    const colDoingId = uuid();
     const colReviewId = uuid();
     const colDoneId = uuid();
 
@@ -28,11 +24,10 @@ export function seedDemoProject(userId) {
         members: [{ userId: userId, role: "owner" }],
         budget: 25000,
         columns: [
-            { id: colBacklogId, title: "Backlog", order: 0, color: "#64748b", isDone: false },
-            { id: colTodoId, title: "To Do", order: 1, color: "#cbd5e1", isDone: false },
-            { id: colProgressId, title: "In Progress", order: 2, color: "#3b82f6", isDone: false },
-            { id: colReviewId, title: "Review", order: 3, color: "#f59e0b", isDone: false },
-            { id: colDoneId, title: "Done", order: 4, color: "#10b981", isDone: true },
+            { id: colPlanningId, title: "Planning", order: 0, color: "#64748b", isDone: false },
+            { id: colDoingId, title: "Doing", order: 1, color: "#3b82f6", isDone: false },
+            { id: colReviewId, title: "Review", order: 2, color: "#f59e0b", isDone: false },
+            { id: colDoneId, title: "Done", order: 3, color: "#10b981", isDone: true },
         ],
         priorities: [
             { id: prioLowId, label: "Low Priority", color: "#64748b", order: 0 },
@@ -108,7 +103,7 @@ export function seedDemoProject(userId) {
             userId,
             title: "Write API Documentation",
             description: "Document the new v2 REST API endpoints using Swagger. Include examples for standard requests and error responses.",
-            columnId: colProgressId,
+            columnId: colDoingId,
             priorityIds: [prioMedId],
             assigneeIds: [userId],
             dueDate: daysFromNow(5),
@@ -123,7 +118,7 @@ export function seedDemoProject(userId) {
             userId,
             title: "Implement Authentication Flow",
             description: "Integrate JWT based authentication on the backend and wire up login/register flows on frontend.",
-            columnId: colProgressId,
+            columnId: colDoingId,
             priorityIds: [prioHighId],
             assigneeIds: [userId],
             dueDate: daysFromNow(3),
@@ -136,39 +131,9 @@ export function seedDemoProject(userId) {
             id: uuid(),
             boardId,
             userId,
-            title: "Record Promo Video",
-            description: "Shoot and edit the 60-second promotional video for social media channels.",
-            columnId: colTodoId,
-            priorityIds: [prioMedId],
-            assigneeIds: [userId],
-            dueDate: daysFromNow(10),
-            cost: 4500,
-            completedAt: null,
-            archived: false,
-            createdAt: now,
-        },
-        {
-            id: uuid(),
-            boardId,
-            userId,
-            title: "Draft Email Sequence",
-            description: "Write the 5-part onboarding email sequence for new signups.",
-            columnId: colTodoId,
-            priorityIds: [prioLowId],
-            assigneeIds: [userId],
-            dueDate: daysFromNow(7),
-            cost: 600,
-            completedAt: null,
-            archived: false,
-            createdAt: now,
-        },
-        {
-            id: uuid(),
-            boardId,
-            userId,
             title: "SEO Optimization",
             description: "Optimize meta tags and test page load speed for the main marketing site.",
-            columnId: colBacklogId,
+            columnId: colPlanningId,
             priorityIds: [prioMedId],
             assigneeIds: [],
             dueDate: null,
@@ -183,7 +148,7 @@ export function seedDemoProject(userId) {
             userId,
             title: "Prepare Investor Deck",
             description: "Update the pitch deck with Q3 metrics and the new product roadmap.",
-            columnId: colBacklogId,
+            columnId: colPlanningId,
             priorityIds: [prioHighId],
             assigneeIds: [userId],
             dueDate: daysFromNow(20),

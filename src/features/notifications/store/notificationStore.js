@@ -6,13 +6,14 @@ export const useNotificationStore = create(
         (set, get) => ({
             notifications: [],
 
-            addNotification({ userId, type, message, boardName }) {
+            addNotification({ userId, type, message, boardName, detail = null }) {
                 const notification = {
                     id: crypto.randomUUID(),
                     userId,
                     type,
                     message,
                     boardName: boardName ?? "",
+                    detail,
                     createdAt: new Date().toISOString(),
                     read: false,
                 };
