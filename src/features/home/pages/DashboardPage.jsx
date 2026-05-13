@@ -25,7 +25,6 @@ import { useBoardView } from "../../../shared/hooks/useBoardView";
 import { GridView } from "../../../shared/components/board-views/GridView";
 import { ListView } from "../../../shared/components/board-views/ListView";
 import { TableView } from "../../../shared/components/board-views/TableView";
-import { FavoritesView } from "../../../shared/components/board-views/FavoritesView";
 import { RecentView } from "../../../shared/components/board-views/RecentView";
 import { TimelineView } from "../../../shared/components/board-views/TimelineView";
 import { useCommandStore } from "../../../shared/hooks/useCommandStore";
@@ -434,8 +433,6 @@ function ActiveBoardView({ view, onViewChange, boards, allTasks, user, pinnedBoa
             return <ListView {...shared} />;
         case "table":
             return <TableView {...shared} />;
-        case "favorites":
-            return <FavoritesView {...shared} onSwitchView={onViewChange} />;
         case "recent":
             return <RecentView {...shared} />;
         case "timeline":

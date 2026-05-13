@@ -23,13 +23,6 @@ export const VIEWS = [
         description: "Sortable data table",
     },
     {
-        id: "favorites",
-        label: "Favorites",
-        icon: Star,
-        primary: false,
-        description: "Pinned boards only",
-    },
-    {
         id: "recent",
         label: "Recent",
         icon: Clock,

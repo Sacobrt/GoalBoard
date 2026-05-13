@@ -4,8 +4,6 @@ export const VIEW_IDS = {
     GRID: "grid",
     LIST: "list",
     TABLE: "table",
-    KANBAN: "kanban",
-    FAVORITES: "favorites",
     RECENT: "recent",
     TIMELINE: "timeline",
 };
