@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useBoardStore } from "../store/boardStore";
 import { useAuthStore } from "../../auth/store/authStore";
 import { useKanbanStore } from "../../kanban/store/kanbanStore";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { WorkloadTracker } from "../components/WorkloadTracker";
 import { Button } from "../../../components/ui/button";
 import { ArrowLeft, Users, Lock } from "lucide-react";
@@ -14,6 +14,10 @@ export function WorkloadPage() {
     const navigate = useNavigate();
     const allTasks = useKanbanStore((s) => s.tasks);
     const boardTasks = useMemo(() => (board ? allTasks.filter((t) => t.boardId === board.id && !t.archived) : []), [allTasks, board]);
+
+    useEffect(() => {
+        document.title = board ? `${board.name} Workload — Goal Board` : "Workload — Goal Board";
+    }, [board?.name]);
 
     if (!board) {
         return (

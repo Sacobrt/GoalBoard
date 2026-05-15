@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
@@ -25,6 +25,10 @@ export function RequestDemoPage() {
     const navigate = useNavigate();
     const addRequest = useDemoRequestStore((s) => s.addRequest);
     const addNotification = useNotificationStore((s) => s.addNotification);
+
+    useEffect(() => {
+        document.title = "Request Demo \u2014 Goal Board";
+    }, []);
 
     const form = useForm({
         resolver: zodResolver(requestDemoSchema),
@@ -85,7 +89,7 @@ export function RequestDemoPage() {
                     {/* Left — value prop */}
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-50 border border-cyan-100 px-4 py-1.5 text-sm font-medium text-cyan-600">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-50 border border-cyan-100 px-4 py-1.5 text-sm font-medium text-cyan-700">
                                 <MessageSquare className="h-3.5 w-3.5" /> Talk to our team
                             </div>
                             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 leading-[1.1]">
@@ -116,7 +120,7 @@ export function RequestDemoPage() {
                             <p className="text-sm text-slate-600 italic leading-relaxed">
                                 "Goal Board replaced three tools for us. Our team went from chaos to clarity in the first week."
                             </p>
-                            <p className="text-xs text-slate-400 mt-2 font-medium">— Engineering Lead, Startup</p>
+                            <p className="text-xs text-slate-500 mt-2 font-medium">— Engineering Lead, Startup</p>
                         </blockquote>
                     </div>
 
@@ -188,7 +192,7 @@ export function RequestDemoPage() {
                                                                     disabled={!!user}
                                                                     aria-invalid={!!form.formState.errors.email}
                                                                 />
-                                                                {user && <p className="mt-1 text-xs text-slate-400">Locked to your account email.</p>}
+                                                                {user && <p className="mt-1 text-xs text-slate-500">Locked to your account email.</p>}
                                                             </div>
                                                         </FormControl>
                                                         <FormMessage />
@@ -219,7 +223,7 @@ export function RequestDemoPage() {
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel className="text-xs text-slate-600">
-                                                            What are you looking to solve? <span className="text-slate-400 font-normal">(optional)</span>
+                                                            What are you looking to solve? <span className="text-slate-500 font-normal">(optional)</span>
                                                         </FormLabel>
                                                         <FormControl>
                                                             <Textarea {...field} placeholder="Tell us about your team and workflow..." rows={3} />
@@ -237,7 +241,7 @@ export function RequestDemoPage() {
                                         </form>
                                     </Form>
 
-                                    <p className="mt-5 text-center text-xs text-slate-400">
+                                    <p className="mt-5 text-center text-xs text-slate-500">
                                         {user ? (
                                             <>
                                                 Logged in as <span className="font-medium text-slate-500">{user.email}</span>

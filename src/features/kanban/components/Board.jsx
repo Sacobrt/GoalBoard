@@ -15,6 +15,16 @@ import { useBoardStore } from "../../board/store/boardStore";
 
 const COL_COLORS = ["#94a3b8", "#3b82f6", "#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#f59e0b", "#10b981", "#ef4444"];
 
+// Returns white or dark text that meets WCAG AA contrast against the given hex background.
+function getContrastColor(hex) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    return L > 0.179 ? "#0f172a" : "#ffffff";
+}
+
 export function Board({ board, userRole }) {
     const columns = [...board.columns].sort((a, b) => a.order - b.order);
     const priorities = [...board.priorities].sort((a, b) => a.order - b.order);
@@ -126,7 +136,11 @@ export function Board({ board, userRole }) {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tasks..." className="pl-9 pr-8" />
                     {search && (
-                        <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-black/5">
+                        <button
+                            onClick={() => setSearch("")}
+                            aria-label="Clear search"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-black/5"
+                        >
                             <X className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
                     )}
@@ -138,8 +152,8 @@ export function Board({ board, userRole }) {
                         onClick={() => setFilterPriorityId("all")}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all"
                         style={{
-                            background: filterPriorityId === "all" ? "#6366f1" : "#f8fafc",
-                            color: filterPriorityId === "all" ? "#fff" : "#64748b",
+                            background: filterPriorityId === "all" ? "#4f46e5" : "#f8fafc",
+                            color: filterPriorityId === "all" ? "#fff" : "#334155",
                             border: `1px solid ${filterPriorityId === "all" ? "transparent" : "#e2e8f0"}`,
                         }}
                     >
@@ -152,7 +166,7 @@ export function Board({ board, userRole }) {
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all"
                             style={{
                                 background: filterPriorityId === p.id ? p.color : "#f8fafc",
-                                color: filterPriorityId === p.id ? "#fff" : "#64748b",
+                                color: filterPriorityId === p.id ? getContrastColor(p.color) : "#334155",
                                 border: `1px solid ${filterPriorityId === p.id ? "transparent" : "#e2e8f0"}`,
                             }}
                         >

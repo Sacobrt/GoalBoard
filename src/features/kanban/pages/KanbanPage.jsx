@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useBoardStore } from "../../board/store/boardStore";
 import { useAuthStore } from "../../auth/store/authStore";
@@ -30,6 +30,10 @@ export function KanbanPage() {
     const [editingTitle, setEditingTitle] = useState(false);
     const [draftTitle, setDraftTitle] = useState("");
     const [leaveOpen, setLeaveOpen] = useState(false);
+
+    useEffect(() => {
+        document.title = board ? `${board.name} — Goal Board` : "Goal Board";
+    }, [board?.name]);
 
     if (!board) {
         return (
@@ -164,10 +168,10 @@ function BudgetBar({ board }) {
                 Budget: <strong className="text-foreground">{fmt(board.budget)}</strong>
             </span>
             <span className="text-muted-foreground">
-                Spent: <strong className="text-amber-600">{fmt(totalSpent)}</strong>
+                Spent: <strong className="text-amber-700">{fmt(totalSpent)}</strong>
             </span>
             <span className="text-muted-foreground">
-                Remaining: <strong className={remaining < 0 ? "text-red-500" : "text-emerald-600"}>{fmt(remaining)}</strong>
+                Remaining: <strong className={remaining < 0 ? "text-red-600" : "text-emerald-700"}>{fmt(remaining)}</strong>
             </span>
         </div>
     );

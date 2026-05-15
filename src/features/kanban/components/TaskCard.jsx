@@ -82,6 +82,7 @@ export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, o
                                             data-no-click
                                             variant="ghost"
                                             size="icon"
+                                            aria-label={`Options for ${task.title}`}
                                             className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100"
                                         />
                                     }
@@ -135,7 +136,7 @@ export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, o
                             <span
                                 key={pid}
                                 className="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-medium"
-                                style={{ background: `${p.color}15`, color: p.color }}
+                                style={{ background: `${p.color}25`, color: "#1e293b" }}
                             >
                                 {p.label}
                             </span>
@@ -152,7 +153,7 @@ export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, o
                             className="flex items-center gap-1 text-[10px] rounded px-1.5 py-0.5 font-medium"
                             style={{
                                 background: isOverdue ? "rgba(239,68,68,0.1)" : isDueToday ? "rgba(245,158,11,0.1)" : "transparent",
-                                color: isOverdue ? "#ef4444" : isDueToday ? "#f59e0b" : "#64748b",
+                                color: isOverdue ? "#b91c1c" : isDueToday ? "#b45309" : "#475569",
                             }}
                         >
                             <CalendarClock className="h-3 w-3" />
@@ -162,7 +163,7 @@ export function TaskCard({ task, priorityMap = {}, onEdit, onClick, onArchive, o
 
                     {/* Cost badge */}
                     {task.cost > 0 && (
-                        <span className="flex items-center gap-0.5 text-[10px] rounded px-1.5 py-0.5 font-medium bg-emerald-50 text-emerald-600">
+                        <span className="flex items-center gap-0.5 text-[10px] rounded px-1.5 py-0.5 font-medium bg-emerald-50 text-emerald-700">
                             <Euro className="h-3 w-3" />
                             {task.cost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                         </span>

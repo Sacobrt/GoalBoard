@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CheckCircle2, ListTodo, TrendingUp, CalendarClock, Plus, KanbanSquare, Check, X, Users, Search } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area } from "recharts";
 import { useAuthStore } from "../../auth/store/authStore";
@@ -58,6 +58,10 @@ export function DashboardPage() {
     const boardToDelete = boards.find((b) => b.id === deleteBoardId);
 
     const today = new Date().toISOString().split("T")[0];
+
+    useEffect(() => {
+        document.title = "Dashboard — Goal Board";
+    }, []);
 
     // Aggregate stats across all user boards
     const stats = useMemo(() => {
@@ -197,7 +201,7 @@ export function DashboardPage() {
             )}
 
             {/* Stat cards */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <section aria-label="Task statistics" className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {statCards.map((s) => (
                     <div key={s.label} className="stat-card-glow rounded-xl border border-border p-4 bg-card">
                         <div className="flex items-center justify-between mb-3">
@@ -211,10 +215,10 @@ export function DashboardPage() {
                         </p>
                     </div>
                 ))}
-            </div>
+            </section>
 
             {/* Boards */}
-            <div>
+            <section aria-label="Your Boards">
                 {/* Section header row */}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <h2 className="font-semibold text-sm text-foreground shrink-0">Your Boards</h2>
@@ -223,13 +227,18 @@ export function DashboardPage() {
                         <div className="relative max-w-55 flex-1 min-w-30">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input
+                                aria-label="Search boards"
                                 value={boardSearch}
                                 onChange={(e) => setBoardSearch(e.target.value)}
                                 placeholder="Search boards..."
                                 className="h-8 text-sm pl-8 pr-7"
                             />
                             {boardSearch && (
-                                <button onClick={() => setBoardSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-black/5">
+                                <button
+                                    aria-label="Clear board search"
+                                    onClick={() => setBoardSearch("")}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-black/5"
+                                >
                                     <X className="h-3 w-3 text-muted-foreground" />
                                 </button>
                             )}
@@ -258,7 +267,7 @@ export function DashboardPage() {
                     />
                 ) : filteredBoards.length === 0 ? (
                     <div className="rounded-xl border border-border py-10 text-center bg-card">
-                        <p className="text-sm text-muted-foreground">No boards match &ldquo;{boardSearch}&rdquo;</p>
+                        <p className="text-sm text-muted-foreground">No boards match &quot;{boardSearch}&quot;</p>
                         <button onClick={() => setBoardSearch("")} className="text-xs font-medium mt-1.5 text-primary hover:underline">
                             Clear search
                         </button>
@@ -276,16 +285,16 @@ export function DashboardPage() {
                         onDelete={(id) => setDeleteBoardId(id)}
                     />
                 )}
-            </div>
+            </section>
 
             {/* Charts */}
             {stats.total > 0 && (
-                <div className="space-y-4">
+                <section aria-label="Analytics" className="space-y-4">
                     <h2 className="font-semibold text-sm text-foreground">Analytics</h2>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         {/* Activity over last 7 days */}
-                        <div className="lg:col-span-2 rounded-xl border border-border p-5 bg-card">
+                        <div aria-label="Activity over last 7 days chart" className="lg:col-span-2 rounded-xl border border-border p-5 bg-card">
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Activity — Last 7 Days</p>
                             <ResponsiveContainer width="100%" height={200}>
                                 <AreaChart data={activityData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -310,6 +319,7 @@ export function DashboardPage() {
                                             fontSize: 12,
                                         }}
                                         labelStyle={{ color: "#0f172a", fontWeight: 600 }}
+                                        itemStyle={{ color: "#0f172a" }}
                                     />
                                     <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
                                     <Area type="monotone" dataKey="Created" stroke="#6366f1" strokeWidth={2} fill="url(#gradCreated)" dot={false} />
@@ -319,7 +329,7 @@ export function DashboardPage() {
                         </div>
 
                         {/* Status pie */}
-                        <div className="rounded-xl border border-border p-5 flex flex-col bg-card">
+                        <div aria-label="Task status chart" className="rounded-xl border border-border p-5 flex flex-col bg-card">
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Task Status</p>
                             <div className="flex-1 flex flex-col items-center justify-center">
                                 <ResponsiveContainer width="100%" height={160}>
@@ -354,7 +364,7 @@ export function DashboardPage() {
 
                     {/* Tasks per board */}
                     {boardChartData.length > 0 && (
-                        <div className="rounded-xl border border-border p-5 bg-card">
+                        <div aria-label="Tasks per board chart" className="rounded-xl border border-border p-5 bg-card">
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Tasks per Board</p>
                             <ResponsiveContainer width="100%" height={180}>
                                 <BarChart data={boardChartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barSize={20} barCategoryGap="30%">
@@ -369,6 +379,7 @@ export function DashboardPage() {
                                             fontSize: 12,
                                         }}
                                         labelStyle={{ color: "#0f172a", fontWeight: 600 }}
+                                        itemStyle={{ color: "#0f172a" }}
                                     />
                                     <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
                                     <Bar dataKey="Active" fill="#6366f1" radius={[4, 4, 0, 0]} />
@@ -377,7 +388,7 @@ export function DashboardPage() {
                             </ResponsiveContainer>
                         </div>
                     )}
-                </div>
+                </section>
             )}
 
             {/* Recently completed */}

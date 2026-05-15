@@ -54,6 +54,10 @@ export function LandingPage() {
 
     const [columns, setColumns] = useState(initialColumns);
 
+    useEffect(() => {
+        document.title = "Goal Board — The Connected Workspace for Teams & Individuals";
+    }, []);
+
     // Simulate Kanban flow (drag between columns)
     useEffect(() => {
         const interval = setInterval(() => {
@@ -85,12 +89,12 @@ export function LandingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/10 selection:text-primary animate-fade-in">
+        <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/10 selection:text-primary">
             {/* Header */}
             <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border pointer-events-auto">
                 <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                        <img src="/logo.png" width={24} height={24} alt="Logo" />
+                        <img src="/logo.png" width={24} height={24} alt="Goal Board logo" />
                         <span className="font-bold text-base tracking-tight">Goal Board</span>
                     </div>
                     <div className="flex items-center gap-4">
@@ -182,7 +186,7 @@ export function LandingPage() {
                 <div className="w-full max-w-5xl mx-auto mt-24">
                     <div className="rounded-2xl border border-border bg-white shadow-2xl p-2 sm:p-4 rotate-1 hover:rotate-0 transition-transform duration-500 overflow-hidden relative">
                         {/* Mac dots */}
-                        <div className="absolute top-6 left-6 flex gap-1.5 z-10">
+                        <div className="absolute top-6 left-6 flex gap-1.5 z-10" aria-hidden="true">
                             <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
                             <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                             <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
@@ -236,6 +240,7 @@ export function LandingPage() {
 
                 {/* Features */}
                 <AnimatedSection className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6 mt-32 text-left">
+                    <h2 className="sr-only">Key features</h2>
                     <div className="p-6 rounded-2xl bg-white border border-border shadow-sm hover:shadow-md transition-shadow">
                         <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-4">
                             <KanbanSquare className="h-6 w-6 text-indigo-500" />
@@ -416,7 +421,7 @@ export function LandingPage() {
                 <AnimatedSection className="max-w-4xl mx-auto w-full mt-40">
                     <div className="md:row-span-2 p-8 rounded-2xl bg-linear-to-br from-indigo-50 to-white border border-indigo-100 flex flex-col justify-between">
                         <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">More productivity. Fewer tools.</h2>
-                        <p className="text-slate-400 mb-12 max-w-xl mx-auto">
+                        <p className="text-slate-500 mb-12 max-w-xl mx-auto">
                             Stop juggling multiple apps. Goal Board brings boards, tasks, and team management into one clean interface.
                         </p>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
@@ -428,7 +433,7 @@ export function LandingPage() {
                             ].map((stat) => (
                                 <div key={stat.label} className="text-center">
                                     <div className="text-3xl sm:text-4xl font-black text-slate-900 mb-1">{stat.value}</div>
-                                    <div className="text-sm text-slate-400">{stat.label}</div>
+                                    <div className="text-sm text-slate-500">{stat.label}</div>
                                 </div>
                             ))}
                         </div>
@@ -442,13 +447,13 @@ export function LandingPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10 text-left">
                         <div>
                             <div className="flex items-center gap-2 mb-4">
-                                <img src="/logo.png" width={20} height={20} alt="Logo" />
+                                <img src="/logo.png" width={20} height={20} alt="Goal Board logo" />
                                 <span className="font-bold text-sm tracking-tight text-slate-900">Goal Board</span>
                             </div>
                             <p className="text-sm text-slate-500 leading-relaxed">The connected workspace where better, faster work happens.</p>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-sm text-slate-900 mb-3">Product</h4>
+                            <h3 className="font-semibold text-sm text-slate-900 mb-3">Product</h3>
                             <ul className="space-y-2 text-sm text-slate-500">
                                 <li>
                                     <Link to="/register" className="hover:text-slate-900 transition-colors">
@@ -468,7 +473,7 @@ export function LandingPage() {
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-sm text-slate-900 mb-3">Resources</h4>
+                            <h3 className="font-semibold text-sm text-slate-900 mb-3">Resources</h3>
                             <ul className="space-y-2 text-sm text-slate-500">
                                 <li>
                                     <Link to="/help" className="hover:text-slate-900 transition-colors">
@@ -478,7 +483,7 @@ export function LandingPage() {
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-semibold text-sm text-slate-900 mb-3">Company</h4>
+                            <h3 className="font-semibold text-sm text-slate-900 mb-3">Company</h3>
                             <ul className="space-y-2 text-sm text-slate-500">
                                 <li>
                                     <Link to="/terms" className="hover:text-slate-900 transition-colors">
@@ -488,7 +493,7 @@ export function LandingPage() {
                             </ul>
                         </div>
                     </div>
-                    <div className="border-t border-border pt-6 text-center text-sm text-slate-400">
+                    <div className="border-t border-border pt-6 text-center text-sm text-slate-500">
                         <p>&copy; {new Date().getFullYear()} Goal Board. All rights reserved.</p>
                     </div>
                 </div>

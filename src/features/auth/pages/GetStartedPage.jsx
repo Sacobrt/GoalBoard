@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
@@ -25,6 +25,10 @@ export function GetStartedPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [serverError, setServerError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        document.title = "Get Started — Goal Board";
+    }, []);
 
     const form = useForm({
         resolver: zodResolver(registerSchema),
@@ -62,7 +66,7 @@ export function GetStartedPage() {
             <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
                 <div className="container mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-2.5">
-                        <img src="/logo.png" width={24} height={24} alt="Logo" />
+                        <img src="/logo.png" width={24} height={24} alt="Goal Board logo" />
                         <span className="font-bold text-base tracking-tight">Goal Board</span>
                     </Link>
                     <div className="flex items-center gap-4">
@@ -224,10 +228,15 @@ export function GetStartedPage() {
                                                         <button
                                                             type="button"
                                                             onClick={() => setShowPassword((v) => !v)}
+                                                            aria-label={showPassword ? "Hide password" : "Show password"}
                                                             className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400"
                                                             tabIndex={-1}
                                                         >
-                                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                            {showPassword ? (
+                                                                <EyeOff className="h-4 w-4" aria-hidden="true" />
+                                                            ) : (
+                                                                <Eye className="h-4 w-4" aria-hidden="true" />
+                                                            )}
                                                         </button>
                                                     </div>
                                                 </FormControl>
@@ -288,7 +297,7 @@ export function GetStartedPage() {
                                 </form>
                             </Form>
 
-                            <p className="mt-5 text-center text-xs text-slate-400">By signing up, you agree to Goal Board's Terms of Service.</p>
+                            <p className="mt-5 text-center text-xs text-slate-500">By signing up, you agree to Goal Board's Terms of Service.</p>
                         </div>
                     </div>
                 </div>

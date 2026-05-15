@@ -76,6 +76,10 @@ export function AdminDashboard() {
     const [activeTab, setActiveTab] = useState("users"); // "users" | "boards" | "demos"
 
     useEffect(() => {
+        document.title = "Admin \u2014 Goal Board";
+    }, []);
+
+    useEffect(() => {
         const tab = new URLSearchParams(location.search).get("tab");
         if (tab === "demos" || tab === "boards" || tab === "users") {
             setActiveTab(tab);

@@ -105,6 +105,7 @@ export function TableView({ boards, allTasks, user, pinnedBoardIds, onTogglePin,
                                                 .map((col) => (
                                                     <span
                                                         key={col.id}
+                                                        aria-hidden="true"
                                                         className="inline-block w-1.5 h-1.5 rounded-full"
                                                         style={{ background: col.color }}
                                                         title={col.title}
@@ -119,7 +120,7 @@ export function TableView({ boards, allTasks, user, pinnedBoardIds, onTogglePin,
                                     {/* Progress */}
                                     <td className="py-3 px-2">
                                         <div className="flex items-center gap-2">
-                                            <Progress value={pct} className="h-1.5 flex-1" />
+                                            <Progress aria-label="Board completion progress" value={pct} className="h-1.5 flex-1" />
                                             <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{pct}%</span>
                                         </div>
                                     </td>
@@ -210,7 +211,7 @@ function buildPageRange(page, total) {
 
 function Pagination({ page, totalPages, total, pageSize, pageRange, onPage }) {
     return (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+        <nav aria-label="Board table pagination" className="flex items-center justify-between px-4 py-3 border-t border-border">
             <span className="text-xs text-muted-foreground">
                 {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total} board{total !== 1 && "s"}
             </span>
@@ -231,7 +232,7 @@ function Pagination({ page, totalPages, total, pageSize, pageRange, onPage }) {
                             ...
                         </span>
                     ) : (
-                        <Button key={p} variant={page === p ? "default" : "outline"} size="sm" className="h-7 w-7 p-0 text-xs" onClick={() => onPage(p)}>
+                        <Button key={p} variant={page === p ? "default" : "outline"} size="sm" className="h-7 w-7 p-0 text-xs" onClick={() => onPage(p)} aria-label={`Page ${p}`} aria-current={page === p ? "page" : undefined}>
                             {p}
                         </Button>
                     ),
@@ -247,6 +248,6 @@ function Pagination({ page, totalPages, total, pageSize, pageRange, onPage }) {
                     <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
             </div>
-        </div>
+        </nav>
     );
 }

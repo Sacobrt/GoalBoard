@@ -21,18 +21,18 @@ export function ListView({ boards, allTasks, user, pinnedBoardIds, onTogglePin, 
     if (rows.length === 0) return null;
 
     return (
-        <div className="animate-fade-in rounded-xl border border-border overflow-hidden bg-card divide-y divide-border">
+        <div role="list" aria-label="Boards list" className="animate-fade-in rounded-xl border border-border overflow-hidden bg-card divide-y divide-border">
             {rows.map(({ board, total, pct }) => {
                 const isPinned = pinnedBoardIds.has(board.id);
                 return (
-                    <div key={board.id} className="group relative flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                    <div role="listitem" key={board.id} className="group relative flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
                         {/* Column colour strip */}
                         <div className="flex flex-col gap-0.5 shrink-0">
                             {board.columns
                                 .slice()
                                 .sort((a, b) => a.order - b.order)
                                 .map((col) => (
-                                    <span key={col.id} className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: col.color }} title={col.title} />
+                                    <span key={col.id} aria-hidden="true" className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: col.color }} title={col.title} />
                                 ))}
                         </div>
 
@@ -44,7 +44,7 @@ export function ListView({ boards, allTasks, user, pinnedBoardIds, onTogglePin, 
 
                             {/* Inline progress — grows to fill space */}
                             <div className="hidden sm:flex flex-1 items-center gap-2 min-w-0">
-                                <Progress value={pct} className="h-1.5 flex-1" />
+                                <Progress aria-label="Board completion progress" value={pct} className="h-1.5 flex-1" />
                                 <span className="text-xs text-muted-foreground shrink-0 w-8 text-right">{pct}%</span>
                             </div>
                         </Link>

@@ -38,7 +38,7 @@ export function GridView({ boards, allTasks, user, pinnedBoardIds, onTogglePin, 
 
 function Pagination({ page, totalPages, total, pageSize, pageRange, onPage }) {
     return (
-        <div className="flex items-center justify-between mt-4">
+        <nav aria-label="Board pagination" className="flex items-center justify-between mt-4">
             <span className="text-xs text-muted-foreground">
                 {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total} board{total !== 1 && "s"}
             </span>
@@ -85,7 +85,7 @@ function Pagination({ page, totalPages, total, pageSize, pageRange, onPage }) {
                     <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
-        </div>
+        </nav>
     );
 }
 

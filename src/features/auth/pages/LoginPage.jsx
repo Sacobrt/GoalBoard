@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
@@ -17,6 +17,10 @@ export function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [serverError, setServerError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        document.title = "Sign In — Goal Board";
+    }, []);
 
     const form = useForm({
         resolver: zodResolver(loginSchema),
@@ -49,25 +53,28 @@ export function LoginPage() {
                 <div className="h-150 w-150 rounded-full opacity-[0.06]" style={{ background: "radial-gradient(circle, #6366f1, transparent 70%)" }} />
             </div>
 
-            <div className="animate-scale-in relative w-full max-w-md">
-                <Button variant="outline" size="sm" className="my-4">
+            <main className="animate-scale-in relative w-full max-w-md">
+                <Button variant="outline" size="sm" className="my-4" render={<Link to="/" />}>
                     <ArrowLeft className="size-3.5" />
-                    <Link to="/dashboard">Back to Home</Link>
+                    Back to Home
                 </Button>
 
                 {/* Card */}
                 <div className="rounded-2xl border border-border bg-card/90 backdrop-blur-xl p-8 shadow-2xl">
                     {/* Logo */}
                     <div className="flex flex-col items-center mb-8">
-                        <img src="/logo.png" width={24} height={24} alt="Logo" />
+                        <img src="/logo.png" width={24} height={24} alt="Goal Board logo" />
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h1>
                         <p className="text-sm mt-1 text-muted-foreground">Sign in to your Goal Board account</p>
                     </div>
 
                     {/* Error */}
                     {serverError && (
-                        <div className="animate-slide-up flex items-center gap-2.5 rounded-lg border border-red-500/25 bg-red-500/10 px-4 py-3 mb-5 text-sm text-red-400">
-                            <AlertCircle className="h-4 w-4 shrink-0" />
+                        <div
+                            role="alert"
+                            className="animate-slide-up flex items-center gap-2.5 rounded-lg border border-red-500/25 bg-red-500/10 px-4 py-3 mb-5 text-sm text-red-400"
+                        >
+                            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
                             {serverError}
                         </div>
                     )}
@@ -85,7 +92,8 @@ export function LoginPage() {
                                     form.setValue("email", "admin@example.com");
                                     form.setValue("password", "admin");
                                 }}
-                                className="text-primary hover:underline"
+                                aria-label="Fill admin credentials"
+                                className="text-primary hover:underline px-2 inline-flex items-center"
                             >
                                 Fill
                             </button>
@@ -100,7 +108,8 @@ export function LoginPage() {
                                     form.setValue("email", "demo@example.com");
                                     form.setValue("password", "demo");
                                 }}
-                                className="text-primary hover:underline"
+                                aria-label="Fill demo credentials"
+                                className="text-primary hover:underline px-2 inline-flex items-center"
                             >
                                 Fill
                             </button>
@@ -154,10 +163,15 @@ export function LoginPage() {
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowPassword((v) => !v)}
+                                                    aria-label={showPassword ? "Hide password" : "Show password"}
                                                     className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded transition-colors text-muted-foreground"
                                                     tabIndex={-1}
                                                 >
-                                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                    {showPassword ? (
+                                                        <EyeOff className="h-4 w-4" aria-hidden="true" />
+                                                    ) : (
+                                                        <Eye className="h-4 w-4" aria-hidden="true" />
+                                                    )}
                                                 </button>
                                             </div>
                                         </FormControl>
@@ -186,7 +200,7 @@ export function LoginPage() {
                         </Link>
                     </p>
                 </div>
-            </div>
+            </main>
         </div>
     );
 }

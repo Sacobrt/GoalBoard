@@ -64,6 +64,7 @@ export function Column({
                         <div
                             {...attributes}
                             {...listeners}
+                            aria-label={`Drag to reorder ${safeTitle} column`}
                             className="cursor-grab hover:bg-slate-200/60 rounded p-0.5 -ml-1 text-slate-400 hover:text-slate-600 transition-colors"
                         >
                             <GripVertical className="h-4 w-4" />
@@ -99,7 +100,10 @@ export function Column({
                     </span>
                     {canEditColumn && (
                         <DropdownMenu>
-                            <DropdownMenuTrigger className="flex items-center justify-center w-5 h-5 rounded hover:bg-slate-200 text-muted-foreground">
+                            <DropdownMenuTrigger
+                                aria-label={`Options for ${safeTitle} column`}
+                                className="flex items-center justify-center w-5 h-5 rounded hover:bg-slate-200 text-muted-foreground"
+                            >
                                 <MoreHorizontal className="h-3.5 w-3.5" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">

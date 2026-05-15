@@ -4,12 +4,17 @@ import { useAuthStore } from "../../auth/store/authStore";
 import { BoardSettings } from "../components/BoardSettings";
 import { Button } from "../../../components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useEffect } from "react";
 
 export function BoardSettingsPage() {
     const { boardId } = useParams();
     const userId = useAuthStore((s) => s.user?.id);
     const board = useBoardStore((s) => s.boards.find((b) => b.id === boardId));
     const navigate = useNavigate();
+
+    useEffect(() => {
+        document.title = board ? `${board.name} Settings — Goal Board` : "Board Settings — Goal Board";
+    }, [board?.name]);
 
     if (!board) {
         return (

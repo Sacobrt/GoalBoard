@@ -23,7 +23,7 @@ export function StaticPageLayout({ children }) {
 
             {/* Footer */}
             <footer className="border-t border-border bg-slate-50/50">
-                <div className="container mx-auto px-4 sm:px-6 py-8 text-center text-sm text-slate-400">
+                <div className="container mx-auto px-4 sm:px-6 py-8 text-center text-sm text-slate-500">
                     <p>&copy; {new Date().getFullYear()} Goal Board. All rights reserved.</p>
                 </div>
             </footer>

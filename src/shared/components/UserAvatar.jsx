@@ -52,10 +52,11 @@ export function UserAvatar({ user, size = "md", className, onClick }) {
     return (
         <Comp
             onClick={onClick}
+            aria-label={onClick ? user?.fullName || user?.username || "User avatar" : undefined}
             className={cn(
                 "flex items-center justify-center rounded-full font-bold text-white overflow-hidden shrink-0 transition-all duration-150",
                 onClick && "cursor-pointer hover:ring-2 hover:ring-ring hover:ring-offset-1 focus:outline-none focus:ring-2 focus:ring-ring",
-                avatar ? "bg-transparent" : "bg-primary",
+                avatar ? "bg-transparent" : "bg-indigo-700",
                 sizeClass,
                 className,
             )}

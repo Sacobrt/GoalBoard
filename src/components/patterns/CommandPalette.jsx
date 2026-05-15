@@ -219,7 +219,7 @@ export function CommandPalette() {
                 <DialogPrimitive.Backdrop className="fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
 
                 {/* Popup — positioned at top-center, matches Dialog content style */}
-                <DialogPrimitive.Popup className="fixed top-[15vh] left-1/2 z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg -translate-x-1/2 rounded-xl border border-border shadow-2xl overflow-hidden bg-popover text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
+                <DialogPrimitive.Popup aria-label="Command palette" className="fixed top-[15vh] left-1/2 z-50 w-full max-w-[calc(100%-2rem)] sm:max-w-lg -translate-x-1/2 rounded-xl border border-border shadow-2xl overflow-hidden bg-popover text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
                     {mode === "create-board" ? (
                         /* Create New Board view */
                         <form onSubmit={handleCreateBoard}>
@@ -269,6 +269,10 @@ export function CommandPalette() {
                                 <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 <input
                                     ref={inputRef}
+                                    role="combobox"
+                                    aria-expanded={open}
+                                    aria-controls="command-palette-listbox"
+                                    aria-activedescendant={filtered.length > 0 ? `command-item-${selectedIndex}` : undefined}
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
                                     onKeyDown={handleKeyDown}
@@ -291,7 +295,7 @@ export function CommandPalette() {
                             </div>
 
                             {/* Results */}
-                            <div ref={listRef} className="max-h-72 overflow-y-auto py-1.5">
+                            <div id="command-palette-listbox" role="listbox" aria-label="Command suggestions" ref={listRef} className="max-h-72 overflow-y-auto py-1.5">
                                 {filtered.length === 0 ? (
                                     <div className="px-4 py-8 text-center">
                                         <p className="text-sm text-muted-foreground">
@@ -310,6 +314,9 @@ export function CommandPalette() {
                                                 return (
                                                     <button
                                                         key={cmd.id}
+                                                        id={`command-item-${idx}`}
+                                                        role="option"
+                                                        aria-selected={isSelected}
                                                         data-index={idx}
                                                         onClick={() => {
                                                             cmd.action();

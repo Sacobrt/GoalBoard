@@ -1,5 +1,6 @@
 import { BookOpen, MessageCircle, FileText, ExternalLink } from "lucide-react";
 import { StaticPageLayout } from "../components/StaticPageLayout";
+import { useEffect } from "react";
 
 const articles = [
     { title: "Getting started with Goal Board", desc: "Learn how to create your first board, add tasks, and invite team members.", icon: BookOpen },
@@ -18,6 +19,10 @@ const faqs = [
 ];
 
 export function HelpCenterPage() {
+    useEffect(() => {
+        document.title = "Help Center — Goal Board";
+    }, []);
+
     return (
         <StaticPageLayout>
             <div className="space-y-16">

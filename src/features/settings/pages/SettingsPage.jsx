@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthStore } from "../../auth/store/authStore";
@@ -15,6 +15,10 @@ import { profileSchema } from "../schemas/profileSchema";
 export function SettingsPage() {
     const user = useAuthStore((s) => s.user);
     const updateProfile = useAuthStore((s) => s.updateProfile);
+
+    useEffect(() => {
+        document.title = "Settings — Goal Board";
+    }, []);
 
     const form = useForm({
         resolver: zodResolver(profileSchema),
@@ -124,10 +128,12 @@ export function SettingsPage() {
                                 />
 
                                 <div className="space-y-1.5">
-                                    <label className="block text-xs font-medium text-muted-foreground">Email</label>
+                                    <label htmlFor="settings-email" className="block text-xs font-medium text-muted-foreground">
+                                        Email
+                                    </label>
                                     <div className="relative">
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input value={user?.email ?? ""} disabled className="pl-9 opacity-60" />
+                                        <Input id="settings-email" value={user?.email ?? ""} disabled className="pl-9 opacity-60" />
                                     </div>
                                     <p className="text-[10px] text-muted-foreground">Email cannot be changed</p>
                                 </div>
@@ -138,8 +144,8 @@ export function SettingsPage() {
                                         <span
                                             className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full"
                                             style={{
-                                                background: user?.role === "admin" ? "rgba(217,119,6,0.1)" : "rgba(99,102,241,0.08)",
-                                                color: user?.role === "admin" ? "#d97706" : "#6366f1",
+                                                background: user?.role === "admin" ? "rgba(217,119,6,0.12)" : "rgba(99,102,241,0.1)",
+                                                color: user?.role === "admin" ? "#92400e" : "#4338ca",
                                             }}
                                         >
                                             {ROLE_LABELS[user?.role] ?? "User"}
@@ -284,7 +290,7 @@ export function SettingsPage() {
                             <Check className="h-4 w-4" />
                             {saved ? "Saved!" : "Save Changes"}
                         </Button>
-                        {saved && <span className="text-sm text-green-500 animate-fade-in">Profile updated successfully</span>}
+                        {saved && <span className="text-sm text-green-700 animate-fade-in">Profile updated successfully</span>}
                     </div>
                 </form>
             </Form>

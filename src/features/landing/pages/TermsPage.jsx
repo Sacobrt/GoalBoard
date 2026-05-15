@@ -1,7 +1,12 @@
 import { FileText } from "lucide-react";
 import { StaticPageLayout } from "../components/StaticPageLayout";
+import { useEffect } from "react";
 
 export function TermsPage() {
+    useEffect(() => {
+        document.title = "Terms of Service — Goal Board";
+    }, []);
+
     return (
         <StaticPageLayout>
             <div className="space-y-16">

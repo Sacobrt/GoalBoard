@@ -53,6 +53,8 @@ export function ViewSwitcher({ view, onViewChange, disabled = false }) {
                 {/* More-views dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger
+                        role="tab"
+                        aria-selected={activeIsSecondary}
                         aria-label="More view options"
                         title="More views"
                         className={cn(
@@ -104,7 +106,10 @@ function AllViewsDropdown({ view, onViewChange }) {
     const ActiveIcon = activeView.icon;
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+            <DropdownMenuTrigger
+                aria-label="Board view switcher"
+                className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
                 <ActiveIcon className="h-3.5 w-3.5 shrink-0" />
                 <span>{activeView.label}</span>
                 <ChevronDown className="h-3 w-3 opacity-60" />

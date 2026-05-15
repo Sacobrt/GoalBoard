@@ -47,13 +47,18 @@ export function Header() {
                 {/* Left: sidebar toggle (mobile) + search hint */}
                 <div className="flex items-center gap-2">
                     {(!isDesktop || sidebarCollapsed) && (
-                        <button onClick={toggleSidebar} className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-muted">
+                        <button
+                            onClick={toggleSidebar}
+                            aria-label="Toggle sidebar"
+                            className="flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-muted"
+                        >
                             <Menu className="h-4 w-4 text-muted-foreground" />
                         </button>
                     )}
                     <button
                         className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs transition-colors hover:bg-muted text-muted-foreground"
                         onClick={toggleCommandPalette}
+                        aria-label="Open command palette"
                     >
                         <Search className="h-3.5 w-3.5" />
                         <span>Search...</span>
@@ -64,10 +69,18 @@ export function Header() {
                 <div className="flex items-center gap-2">
                     {/* Notification bell */}
                     <Popover open={notifOpen} onOpenChange={setNotifOpen}>
-                        <PopoverTrigger className="relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-muted">
+                        <PopoverTrigger
+                            aria-label="Notifications"
+                            className="relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors hover:bg-muted"
+                        >
                             <Bell className="h-4 w-4 text-muted-foreground" />
                             {totalBadge > 0 && (
-                                <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold text-white bg-red-500">
+                                <span
+                                    role="status"
+                                    aria-live="polite"
+                                    aria-label={`${totalBadge} unread notifications`}
+                                    className="absolute -top-0.5 -right-0.5 flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold text-white bg-red-600"
+                                >
                                     {totalBadge > 9 ? "9+" : totalBadge}
                                 </span>
                             )}
@@ -78,12 +91,24 @@ export function Header() {
                                 {(unreadNotifCount > 0 || userNotifications.length > 0) && (
                                     <div className="flex items-center gap-1">
                                         {unreadNotifCount > 0 && (
-                                            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => markAllAsRead(user.id)}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 px-2 text-xs"
+                                                onClick={() => markAllAsRead(user.id)}
+                                                aria-label="Mark all notifications as read"
+                                            >
                                                 <CheckCheck className="h-3 w-3 mr-1" /> Read all
                                             </Button>
                                         )}
                                         {userNotifications.length > 0 && (
-                                            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-red-500" onClick={() => clearAll(user.id)}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 px-2 text-xs text-red-500"
+                                                onClick={() => clearAll(user.id)}
+                                                aria-label="Clear all notifications"
+                                            >
                                                 Clear
                                             </Button>
                                         )}
@@ -124,7 +149,7 @@ export function Header() {
                                                         <p className="text-sm text-foreground">{notif.message}</p>
                                                         <p className="text-xs mt-0.5 text-muted-foreground">{timeAgo(notif.createdAt)}</p>
                                                     </div>
-                                                    {!notif.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-cyan-500 shrink-0" />}
+                                                    {!notif.read && <span aria-hidden="true" className="mt-1.5 w-2 h-2 rounded-full bg-cyan-500 shrink-0" />}
                                                 </div>
                                                 <div className="mt-2 ml-7">
                                                     <Button
@@ -156,7 +181,7 @@ export function Header() {
                                                         <p className="text-sm font-medium text-foreground">{notif.message}</p>
                                                         <p className="text-xs mt-0.5 text-muted-foreground">{timeAgo(notif.createdAt)}</p>
                                                     </div>
-                                                    {!notif.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
+                                                    {!notif.read && <span aria-hidden="true" className="mt-1.5 w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
                                                 </div>
                                                 <div className="mt-2 ml-7 flex items-center gap-2">
                                                     {notif.detail && (
@@ -216,7 +241,7 @@ export function Header() {
                                                 <p className="text-xs mt-0.5 text-muted-foreground">{timeAgo(notif.createdAt)}</p>
                                                 {notif.detail && <p className="text-xs mt-1 text-primary font-medium">Click to expand</p>}
                                             </div>
-                                            {!notif.read && <span className="mt-1.5 w-2 h-2 rounded-full bg-primary shrink-0" />}
+                                            {!notif.read && <span aria-hidden="true" className="mt-1.5 w-2 h-2 rounded-full bg-primary shrink-0" />}
                                         </div>
                                     );
                                 })}

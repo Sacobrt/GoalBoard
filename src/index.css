@@ -29,7 +29,7 @@
     --card-foreground: #0f172a;
     --popover: #f8fafc;
     --popover-foreground: #0f172a;
-    --primary: #6366f1;
+    --primary: #4f46e5;
     --primary-foreground: #ffffff;
     --secondary: #f1f5f9;
     --secondary-foreground: #0f172a;
@@ -208,5 +208,39 @@ body {
     }
     html {
         @apply font-sans;
+        scroll-behavior: smooth;
+    }
+}
+
+/* Skip-to-content link — visible only on focus for keyboard users */
+.skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: 9999;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--primary-foreground);
+    background: var(--primary);
+    border-radius: 0.5rem;
+    text-decoration: none;
+    outline: none;
+    transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+    top: 0.75rem;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }

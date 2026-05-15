@@ -66,12 +66,12 @@ export function BoardCard({ board, allTasks, user, isPinned, onTogglePin, onDele
                             .slice()
                             .sort((a, b) => a.order - b.order)
                             .map((col) => (
-                                <span key={col.id} className="inline-block w-2 h-2 rounded-full" style={{ background: col.color }} title={col.title} />
+                                <span key={col.id} aria-hidden="true" className="inline-block w-2 h-2 rounded-full" style={{ background: col.color }} title={col.title} />
                             ))}
                     </div>
                 )}
 
-                <Progress value={pct} className={cn("mb-1.5", compact ? "h-1" : "h-1.5")} />
+                <Progress aria-label="Board completion progress" value={pct} className={cn("mb-1.5", compact ? "h-1" : "h-1.5")} />
 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>

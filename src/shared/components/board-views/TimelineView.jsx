@@ -80,6 +80,7 @@ export function TimelineView({ boards, allTasks, user, pinnedBoardIds, onToggleP
                                     fontSize: 12,
                                 }}
                                 labelStyle={{ color: "#0f172a", fontWeight: 600 }}
+                                itemStyle={{ color: "#0f172a" }}
                             />
                             <Area
                                 type="monotone"
